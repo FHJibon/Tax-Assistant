@@ -1,0 +1,14 @@
+uvicorn
+SQLAlchemy
+FastAPI
+aiosqlite
+pydantic
+pydantic-settings
+python-jose[cryptography]
+passlib[argon2]
+python-dotenv
+email-validator
+openai
+pinecone
+PyPDF2
+tiktoken

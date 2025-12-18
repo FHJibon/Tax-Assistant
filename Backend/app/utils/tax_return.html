@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tax Return</title>
+<style>
+    * { box-sizing: border-box; }
+    
+    body {
+        font-family: "Times New Roman", Times, serif;
+        font-size: 10pt; 
+        line-height: 1.3;
+        margin: 0;
+        padding: 0;
+        background-color: #525659;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .page {
+        width: 210mm;
+        height: 297mm;
+        background: white;
+        margin: 20px auto;
+        padding: 15mm 15mm;
+        position: relative;
+        overflow: hidden;
+        page-break-after: always;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+
+    .page-1, .page-10 {
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+
+    @media print {
+        body { background: none; margin: 0; }
+        .page {
+            margin: 0;
+            border: none;
+            width: 210mm;
+            height: 297mm;
+            box-shadow: none;
+            page-break-after: always;
+        }
+        .page:last-child { page-break-after: auto; }
+    }
+
+    .center { text-align: center; }
+    .right { text-align: right; }
+    .bold { font-weight: bold; }
+    .uppercase { text-transform: uppercase; }
+    .justify { text-align: justify; }
+    .flex-row { display: flex; justify-content: space-between; align-items: flex-end; }
+    
+    .box-check {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #000;
+        margin: 0 5px;
+        vertical-align: text-bottom;
+    }
+
+    .input-dashed {
+        border-bottom: 1px dashed #000;
+        display: inline-block;
+        flex-grow: 1;
+        min-width: 20px;
+    }
+    
+    .input-dotted {
+        border-bottom: 1px dotted #000;
+        display: inline-block;
+        flex-grow: 1;
+    }
+
+    .input-line {
+        border-bottom: 1px dotted #000;
+        display: inline-block;
+        flex-grow: 1;
+        min-width: 20px;
+        margin-left: 5px;
+    }
+
+    .full-line {
+        border-bottom: 1px dotted #000;
+        width: 100%;
+        height: 20px;
+        margin-top: 5px;
+    }
+
+    .char-box {
+        width: 24px;
+        height: 24px;
+        border: 1px solid #000;
+        display: inline-block;
+        margin-right: -1px;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 22px;
+        font-size: 11pt;
+    }
+    .spacer {
+        display: inline-block;
+        width: 15px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .tin-grid {
+        display: inline-flex;
+        margin-left: 10px;
+    }
+    .tin-cell {
+        width: 25px;
+        height: 25px;
+        border: 1px solid #000;
+        margin-right: -1px; 
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .p1-row {
+        display: flex;
+        align-items: flex-end;
+        margin-bottom: 12px;
+        width: 100%;
+    }
+    .p1-label {
+        white-space: nowrap;
+        margin-right: 5px;
+    }
+    .p1-col {
+        display: flex;
+        align-items: flex-end;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 3px;
+        font-size: 10pt;
+    }
+
+    .compact-table td, .compact-table th {
+        padding: 2px 4px;
+        border: 1px solid #000;
+        border-collapse: collapse;
+    }
+
+    th {
+        background-color: transparent;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    td {
+        vertical-align: middle;
+    }
+
+    .shaded { background-color: #e6e6e6; }
+    .no-border, .no-border td { border: none !important; padding: 2px 0; }
+    .col-amount { width: 130px; text-align: center; }
+    .col-narrow { width: 35px; text-align: center; }
+
+    .office-use-box {
+        border: 1px solid #000;
+        padding: 5px;
+        font-size: 9pt;
+        width: 260px;
+        float: right;
+        margin-bottom: 5px;
+    }
+    
+    .form-id-box {
+        border: 2px solid #000;
+        padding: 3px 10px;
+        display: inline-block;
+        font-weight: bold;
+        font-size: 13pt;
+        margin: 5px 0;
+    }
+
+    .footer-num {
+        position: absolute;
+        bottom: 10mm;
+        width: 100%;
+        left: 0;
+        text-align: center;
+        font-weight: bold;
+        font-size: 11pt;
+    }
+    
+    .verify-box {
+        padding: 10px;
+        margin-top: 15px;
+    }
+    
+    .doc-list-box {
+        border: 1px solid #000;
+        height: 100px;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .instruction-box { border: 2px solid #000; padding: 10px; min-height: 800px; }
+    .list-table td { border: none; vertical-align: top; padding-bottom: 8px; }
+
+</style>
+</head>
+<body>
+
+<div class="page page-1">
+    <div style="overflow: hidden; padding-bottom: 5px;">
+        <div style="float: left; width: 45%; text-align: center; padding-top: 5px;">
+            <div class="bold" style="font-size: 13pt;">National Board of Revenue</div>
+            <div class="form-id-box">IT-11GA (2023)</div>
+            <div style="font-size: 10pt;">www.nbr.gov.bd</div>
+        </div>
+        <div class="office-use-box">
+            <div class="bold center" style="border-bottom: 1px solid #000;">For Office Use</div>
+            <div style="margin-top:2px;">Serial No. of Return Register: ...................</div>
+            <div>Volume No. of Return Register: .................</div>
+            <div>Date of Return Submission: ......................</div>
+        </div>
+    </div>
+    
+    <div class="center bold uppercase" style="font-size: 16pt; margin-top: 10px;">FORM OF RETURN OF INCOME</div>
+    <div class="center uppercase" style="font-size: 12pt; margin-bottom: 25px;">FOR INDIVIDUAL PERSON</div>
+
+    <div style="font-size: 11.5pt;">
+        <div class="p1-row">
+            <span class="p1-label">1. Name:</span>
+            <span class="input-line"></span>
+        </div>
+
+        <div class="p1-row">
+            <span class="p1-label">2. National ID No. / Passport No. (If No NID):</span>
+            <span class="input-line"></span>
+        </div>
+
+        <div class="p1-row" style="align-items: center;">
+            <span class="p1-label">3. TIN:</span>
+            <div style="margin-left: 20px;">
+                <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+                <span class="spacer">-</span>
+                <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+                <span class="spacer">-</span>
+                <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+            </div>
+        </div>
+
+        <div class="p1-row">
+            <div class="p1-col" style="width: 50%; padding-right: 10px;">
+                <span class="p1-label">4. (a) Circle:</span>
+                <span class="input-line"></span>
+            </div>
+            <div class="p1-col" style="width: 50%; padding-left: 10px;">
+                <span class="p1-label">(b) Taxes Zone:</span>
+                <span class="input-line"></span>
+            </div>
+        </div>
+
+        <div class="p1-row">
+            <div class="p1-col" style="width: 40%;">
+                <span class="p1-label">5. Assessment Year:</span>
+                <span class="input-line"></span>
+            </div>
+            <div style="width: 60%; text-align: right;">
+                6. Residential Status: Resident <span class="box-check"></span> / Non-resident <span class="box-check"></span>
+            </div>
+        </div>
+
+        <div class="p1-row">
+            7. Taxpayer’s Status: &nbsp; 
+            Individual <span class="box-check"></span> &nbsp; 
+            Firm <span class="box-check"></span> &nbsp; 
+            Hindu Undivided Family <span class="box-check"></span> &nbsp; 
+            Others <span class="box-check"></span>
+        </div>
+
+        <div style="margin-bottom: 5px;">
+            8. Tick on the box for getting special benefit:
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <div><span class="box-check"></span> A gazette war-wounded freedom fighter</div>
+            <div><span class="box-check"></span> Female</div>
+            <div><span class="box-check"></span> Third gender</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <div><span class="box-check"></span> Disable person</div>
+            <div><span class="box-check"></span> Aged 65 years or more</div>
+            <div><span class="box-check"></span> A parent of a person with disability</div>
+        </div>
+
+        <div style="margin-bottom: 5px;">9. Date of Birth (DD MM YYYY)</div>
+        <div style="margin-bottom: 12px;">
+            <span class="char-box"></span><span class="char-box"></span>
+            <span class="spacer"></span>
+            <span class="char-box"></span><span class="char-box"></span>
+            <span class="spacer"></span>
+            <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+        </div>
+
+        <div class="p1-row">
+            <span class="p1-label" style="min-width: 180px;">10. Wife/Husband’s Name:</span>
+            <span class="input-line"></span>
+        </div>
+        <div class="p1-row">
+            <span class="p1-label" style="min-width: 180px; text-align: right; padding-right: 10px;">TIN (if spouse is a Taxpayer):</span>
+            <span class="input-line"></span>
+        </div>
+
+        <div class="p1-row" style="margin-bottom: 5px;">
+            <span class="p1-label">11. Address:</span>
+            <span class="input-line"></span>
+        </div>
+        <div class="full-line"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; margin-bottom: 12px;">
+            <div class="p1-col" style="width: 32%;">
+                <span class="p1-label">Telephone:</span>
+                <span class="input-line"></span>
+            </div>
+            <div class="p1-col" style="width: 32%;">
+                <span class="p1-label">Mobile:</span>
+                <span class="input-line"></span>
+            </div>
+            <div class="p1-col" style="width: 32%;">
+                <span class="p1-label">e-mail:</span>
+                <span class="input-line"></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 5px;">
+            12. If employed, employer’s name (latest employer’s name in case of multiple employment):
+        </div>
+        <div class="full-line"></div>
+        <div class="full-line" style="margin-bottom: 12px;"></div>
+
+        <div class="p1-row">
+            <span class="p1-label" style="min-width: 250px;">13. (a) Name of Organization:</span>
+            <span class="input-line"></span>
+        </div>
+        <div class="p1-row">
+            <span class="p1-label" style="min-width: 250px; padding-left: 28px;">(b) Business Identification number (BIN):</span>
+            <span class="input-line"></span>
+        </div>
+
+        <div style="margin-bottom: 5px;">
+            14. Name and TIN of Partners / Members in case of Firm / Association of Persons:
+        </div>
+        <div class="full-line"></div>
+        <div class="full-line"></div>
+    </div>
+
+    <div class="footer-num">1</div>
+</div>
+
+<div class="page">
+    <div class="center bold" style="font-size: 13pt; margin-bottom: 20px;">
+        Statement of Income and Tax during the Income Year ended on....................
+    </div>
+    
+    <div style="display: flex; align-items: baseline; margin-bottom: 15px;">
+        <span style="font-weight: bold; margin-right: 5px;">Name:</span>
+        <span class="input-dotted" style="flex-grow: 1; margin-right: 20px;"></span>
+        
+        <div style="display: inline-flex; align-items: center;">
+            <span style="font-weight: bold; margin-right: 5px;">TIN:</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Particulars of Income</th>
+                <th class="col-amount">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1. Income from Employment (annex Schedule 1)</td><td></td></tr>
+            <tr><td>2. Income from Rent (annex Schedule 2)</td><td></td></tr>
+            <tr><td>3. Income from Agriculture (annex Schedule 3)</td><td></td></tr>
+            <tr><td>4. Income from Business (annex Schedule 4)</td><td></td></tr>
+            <tr><td>5. Income from Capital Gain</td><td></td></tr>
+            <tr><td>6. Income from Financial Assets<br>(Bank Interest, Dividend, Securities Profit etc)</td><td></td></tr>
+            <tr><td>7. Income from Other Sources<br>(Royalty, License Fees, Honorarium, Govt. Incentive etc.)</td><td></td></tr>
+            <tr><td>8. Share of Income from Firm or AoP</td><td></td></tr>
+            <tr><td>9. Income of Minor or Spouse (if not Taxpayer)</td><td></td></tr>
+            <tr><td>10. Taxable Income from Abroad</td><td></td></tr>
+            <tr><td><strong>11. Total Income (Aggregate of Serial 1 to 10)</strong></td><td></td></tr>
+        </tbody>
+    </table>
+
+    <br>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Tax Computation</th>
+                <th class="col-amount">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>12. Gross Tax on Taxable Income</td><td></td></tr>
+            <tr><td>13. Tax Rebate (annex Schedule 5)</td><td></td></tr>
+            <tr><td>14. Net Tax after Rebate (12 &ndash; 13)</td><td></td></tr>
+            <tr><td>15. Minimum Tax</td><td></td></tr>
+            <tr><td>16. Tax Payable (Higher of 14 and 15)</td><td></td></tr>
+            <tr><td>17. (a) Net Wealth Surcharge (if applicable)</td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(b) Environmental Surcharge (if applicable)</td><td></td></tr>
+            <tr><td>18. Delay Interest, Penalty or any other amount<br>Under Income Tax Act (if any)</td><td></td></tr>
+            <tr><td><strong>19. Total Amount Payable (16 + 17 + 18)</strong></td><td></td></tr>
+        </tbody>
+    </table>
+    <div class="footer-num">2</div>
+</div>
+
+<div class="page">
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Particulars of Tax Payment</th>
+                <th class="col-amount">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>20. Tax Deducted or Collected at Source (attach proof)</td><td></td></tr>
+            <tr><td>21. Advance Tax paid (attach proof)</td><td></td></tr>
+            <tr><td>22. Adjustment of Tax Refund {mention assessment year(s) of refund}</td><td></td></tr>
+            <tr><td>23. Tax Paid with this Return</td><td></td></tr>
+            <tr><td class="bold">24. Total Tax Paid and Adjusted (20+21+22+23)</td><td></td></tr>
+            <tr><td>25. Excess Payment</td><td></td></tr>
+            <tr><td>26. Tax Exempted / Tax Free Income (attach proof)</td><td></td></tr>
+        </tbody>
+    </table>
+
+    <div class="center bold" style="margin-top: 30px; margin-bottom: 5px; font-size: 11pt;">List of Documents Furnished with this Return</div>
+    <div style="border: 1px solid #000; height: 160px; width: 100%; margin-bottom: 15px;"></div>
+
+    <div class="verify-box">
+        <h3 class="center" style="text-decoration: underline; margin-bottom: 15px;">Verification</h3>
+        
+        <div style="font-size: 11.5pt; line-height: 1.8; text-align: justify;">
+            I <span class="input-dotted" style="width: 260px; vertical-align: baseline;"></span> father / husband <span class="input-dotted" style="width: 280px; vertical-align: baseline;"></span><br>
+            TIN: <span class="input-dotted" style="width: 220px; vertical-align: baseline;"></span> Solemnly declare that to the best of my knowledge and belief the information given in this return and statements and documents annexed herewith is correct and complete.
+        </div>
+        
+        <div class="flex-row" style="margin-top: 50px;">
+            <div>
+                Place: <span class="input-dotted" style="width: 150px;"></span><br><br>
+                Date: <span class="input-dotted" style="width: 150px;"></span>
+            </div>
+            <div class="center" style="margin-right: 20px;">
+                <br>
+                <span class="input-dotted" style="width: 250px;"></span><br>
+                <strong>Signature</strong><br>
+                (Name in block letters)
+            </div>
+        </div>
+    </div>
+    <div class="footer-num">3</div>
+</div>
+
+<div class="page">
+    <div class="center bold" style="font-size: 13pt;">Schedule 1</div>
+    <div class="center bold" style="margin-bottom: 10px;">Particulars of Income from Employment</div>
+
+    <div style="font-size: 10pt; margin-bottom: 5px;"><strong>a. This part is applicable for employees receiving salary under government pay scale.</strong></div>
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span>Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: left;">Particulars</th>
+                <th width="110">Total Amount (Taka)</th>
+                <th width="110">Exempted Amount (Taka)</th>
+                <th width="110">Taxable Amount (Taka)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1. Basic pay</td><td></td><td></td><td></td></tr>
+            <tr><td>2. Arrear Pay (if not included in taxable income earlier)</td><td></td><td></td><td></td></tr>
+            <tr><td>3. Special allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>4. House Rent allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>5. Medical allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>6. Conveyance allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>7. Festival allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>8. Support Staff allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>9. Leave allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>10. Honorarium / Reward</td><td></td><td></td><td></td></tr>
+            <tr><td>11. Overtime allowances</td><td></td><td></td><td></td></tr>
+            <tr><td>12. Bangla Noboborsho allowances</td><td></td><td></td><td></td></tr>
+            <tr><td>13. Interest accrued on Provident Fund</td><td></td><td></td><td></td></tr>
+            <tr><td>14. Lump Grant</td><td></td><td></td><td></td></tr>
+            <tr><td>15. Gratuity</td><td></td><td></td><td></td></tr>
+            <tr><td>16. Others, if any (provide detail)</td><td></td><td></td><td></td></tr>
+            <tr><td>17. Total</td><td></td><td></td><td></td></tr>
+        </tbody>
+    </table>
+
+    <div style="font-size: 10pt; margin-top: 15px; margin-bottom: 5px;"><strong>b. This part is applicable for employees other than employees receiving salary under government pay scale.</strong></div>
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span>Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Particulars</th>
+                <th width="130">Income (Taka)</th>
+                <th width="130">Income (Taka)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1. Basic pay</td><td></td><td></td></tr>
+            <tr><td>2. Allowances</td><td></td><td></td></tr>
+            <tr><td>3. Advance / Arrear Salary</td><td></td><td></td></tr>
+            <tr><td>4. Gratuity, Annuity, Pension or similar benefit</td><td></td><td></td></tr>
+            <tr><td>5. Perquisites</td><td></td><td></td></tr>
+            <tr><td>6. Receipt in lieu of or in addition to Salary or Wages</td><td></td><td></td></tr>
+            <tr><td>7. Income from Employee’s Share Scheme</td><td></td><td></td></tr>
+            <tr><td>8. Accommodation Facility</td><td></td><td></td></tr>
+            <tr><td>9. Transport Facility</td><td></td><td></td></tr>
+            <tr><td>10. Any other Facility provided by Employer</td><td></td><td></td></tr>
+            <tr><td>11. Employer’s Contribution to Recognized Provident Fund</td><td></td><td></td></tr>
+            <tr><td>12. Others, if any (provide detail)</td><td></td><td></td></tr>
+            <tr><td>13. Total Salary Received (aggregate of 1 to 12)</td><td></td><td></td></tr>
+            <tr><td>14. Exempted Amount (as per Part 1 of 6<sup>th</sup> Schedule)</td><td></td><td></td></tr>
+            <tr><td>15. Total Income from Salary (13 – 14)</td><td></td><td></td></tr>
+        </tbody>
+    </table>
+    <div class="footer-num">4</div>
+</div>
+
+<div class="page">
+    <div class="center bold" style="font-size: 13pt;">Schedule-2</div>
+    <div class="center bold" style="margin-bottom: 10px;">(Particulars of Income from Rent)</div>
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span>Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th width="150" style="text-align: center;">Location, description and ownership proportion of property</th>
+                <th style="text-align: center;">Total Rental Income Computation</th>
+                <th width="100" style="text-align: center;">Amount (Taka)</th>
+                <th width="100" style="text-align: center;">Amount (Taka)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="16" style="vertical-align: top;"></td>
+                <td>1. Rent Received or Annual Value (whichever is higher)</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2. Advance Rent Received</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3. Value of any Benefit in addition to 1 & 2</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4. Adjusted Advance Rent</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5. Vacancy Allowance</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6. Total Rental Value (1 + 2 + 3 – 4 – 5)</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td style="border-right: 1px solid #000;">7. Allowable Deduction:</td>
+                <td class="shaded" style="border-right: 1px solid #000; background-color: #fff;"></td>
+                <td class="shaded" style="border-right: 1px solid #000; background-color: #fff;"></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 30px;">(a) Repair, Collection etc.</td>
+                <td></td>
+                <td rowspan="6"></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 30px;">(b) Municipal or Local Tax</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 30px;">(c) Land Revenue</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 30px;">(d) Interest Paid on Loan / Mortgage / Capital Charge</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 30px;">(e) Insurance Premium Paid</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td style="padding-left: 30px;">(f) Others, if any</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8. Total Admissible Deduction</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9. Net Income (6 – 8)</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10. Taxpayer’s Share, if applicable</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="center bold" style="font-size: 13pt; margin-top: 25px;">Schedule-3</div>
+    <div class="center bold" style="margin-bottom: 10px;">(Particulars of Income from Agriculture)</div>
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span>Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex-row" style="margin-bottom: 5px;">
+        <span>Nature of Agriculture: <span class="input-dotted" style="width: 400px;"></span></span>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Summary of Income</th>
+                <th width="160" style="text-align: center;">Amount in Taka</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1. Sales / Turnover / Receipt</td><td></td></tr>
+            <tr><td>2. Gross Profit</td><td></td></tr>
+            <tr><td style="height: 50px;">3. General Expenses, Selling Expenses, Land Revenue, Rates, Loan Interest, Insurance Premium and Other Expenses</td><td></td></tr>
+            <tr><td>4. Net Profit ( 2 – 3 )</td><td></td></tr>
+        </tbody>
+    </table>
+    <div class="footer-num">5</div>
+</div>
+
+<div class="page">
+    <div class="center bold" style="font-size: 13pt;">Schedule-4</div>
+    <div class="center bold" style="margin-bottom: 10px;">(Particulars of Income from Business)</div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span>Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; width: 100%;">
+        <div style="display: flex; width: 55%; align-items: flex-end;">
+            <span style="white-space: nowrap;">Name of Business: </span>
+            <span class="input-dotted" style="flex-grow: 1; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; width: 43%; align-items: flex-end;">
+            <span style="white-space: nowrap;">Nature of Business: </span>
+            <span class="input-dotted" style="flex-grow: 1; margin-left: 5px;"></span>
+        </div>
+    </div>
+    <div style="display: flex; align-items: flex-end; margin-bottom: 10px;">
+        <span style="white-space: nowrap;">Address of Business: </span>
+        <span class="input-dotted" style="flex-grow: 1; margin-left: 5px;"></span>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Summary of Income</th>
+                <th class="col-amount">Amount in Taka</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1. Sales / Turnover / Receipt</td><td></td></tr>
+            <tr><td>2. Gross Profit</td><td></td></tr>
+            <tr><td>3. General, Administrative, Selling and Other Expenses</td><td></td></tr>
+            <tr><td>4. Bad Debt Expense</td><td></td></tr>
+            <tr><td>5. Net Profit ( 2 – 3 )</td><td></td></tr>
+        </tbody>
+    </table>
+
+    <br>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Summary of Balance Sheet</th>
+                <th class="col-amount">Amount in Taka</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>6. Cash and Bank Balance</td><td></td></tr>
+            <tr><td>7. Inventory</td><td></td></tr>
+            <tr><td>8. Fixed Assets</td><td></td></tr>
+            <tr><td>9. Other Assets</td><td></td></tr>
+            <tr><td>10. Total Assets ( 6 + 7 + 8 + 9)</td><td></td></tr>
+            <tr><td>11. Opening Capital</td><td></td></tr>
+            <tr><td>12. Net Profit</td><td></td></tr>
+            <tr><td>13. Drawing during the Income Year</td><td></td></tr>
+            <tr><td>14. Closing Capital (11 + 12 – 13)</td><td></td></tr>
+            <tr><td>15. Liabilities</td><td></td></tr>
+            <tr><td>16. Total Capital & Liabilities (14 + 15)</td><td></td></tr>
+        </tbody>
+    </table>
+
+    <div class="center bold" style="font-size: 13pt; margin-top: 25px;">Schedule-5</div>
+    <div class="center bold" style="margin-bottom: 5px;">(Particulars of Investment Tax Credit)</div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span>Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+    <div style="margin-bottom: 3px;">Particulars of Rebatable Investment</div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th style="text-align: center;">Summary of Income</th>
+                <th class="col-amount">Amount in Taka</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1. Life Insurance Premium or Contractual Deferred Annuity Paid in Bangladesh</td><td></td></tr>
+            <tr><td>2. Contribution to Deposit Pension Scheme</td><td></td></tr>
+            <tr><td>3. Investment in Government Securities, Unit Certificate, Mutual Fund, ETF or Joint Investment Scheme Unit Certificate</td><td></td></tr>
+            <tr><td>4. Investment in Securities listed with Approved Stock Exchange</td><td></td></tr>
+            <tr><td>5. Contribution to Provident Fund to which Provident Fund Act, 1925 applies</td><td></td></tr>
+            <tr><td>6. Self & Employer’s Contribution to Recognized Provident Fund</td><td></td></tr>
+            <tr><td>7. Contribution to Super Annuation Fund</td><td></td></tr>
+            <tr><td>8. Contribution to Benevolent Fund / Group Insurance Premium</td><td></td></tr>
+            <tr><td>9. Contribution to Zakat Fund</td><td></td></tr>
+            <tr><td>10. Others, if any (provide detail)</td><td></td></tr>
+            <tr><td>11. Total Investment (aggregate of 1 to 10)</td><td></td></tr>
+            <tr><td>12. Amount of Tax Rebate</td><td></td></tr>
+        </tbody>
+    </table>
+    <div class="footer-num">6</div>
+</div>
+
+<div class="page">
+    <div class="center bold" style="font-size: 14pt; margin-bottom: 5px;">Statement of Expenses Relating to Lifestyle</div>
+    <div class="center bold" style="font-size: 12pt; text-decoration: underline; margin-bottom: 15px;">(For Individual Person)</div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <div style="display: flex; align-items: flex-end;">
+            <span class="bold">Name: </span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span class="bold" style="margin-right: 5px;">TIN</span>
+            <div class="tin-grid">
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            </div>
+        </div>
+    </div>
+
+    <table class="compact-table">
+        <thead>
+            <tr>
+                <th width="50" style="text-align: center;">Serial No.</th>
+                <th style="text-align: center;">Particulars of Expenditure</th>
+                <th width="120" style="text-align: center;">Amount of Taka</th>
+                <th width="120" style="text-align: center;">Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td class="center">1.</td><td>Personal and family fooding, clothing and other essentials</td><td></td><td></td></tr>
+            <tr><td class="center">2.</td><td>Housing Expense</td><td></td><td></td></tr>
+            <tr><td class="center">3.</td><td>Personal Transport Expense</td><td></td><td></td></tr>
+            <tr><td class="center">4.</td><td>Utility Expense (Electricity, Gas, Water, Telephone, Mobile, Internet etc. Bills)</td><td></td><td></td></tr>
+            <tr><td class="center">5.</td><td>Education Expense</td><td></td><td></td></tr>
+            <tr><td class="center">6.</td><td>Personal Expense for Local and Foreign Travel, Vacation etc.</td><td></td><td></td></tr>
+            <tr><td class="center">7.</td><td>Festival and Other Special Expense</td><td></td><td></td></tr>
+            <tr><td class="center">8.</td><td>Tax Deducted / Collected at Source (with TS on Profit of Sanchaypatra) and Tax & Surcharge Paid based on Tax Return of Last Year)</td><td></td><td></td></tr>
+            <tr><td class="center">9.</td><td>Interest Paid on Personal Loan Received from Institution & Other Source</td><td></td><td></td></tr>
+            <tr><td></td><td class="right bold">Total:</td><td></td><td></td></tr>
+        </tbody>
+    </table>
+
+    <div class="verify-box" style="margin-top: 50px;">
+        <h3 class="center bold" style="text-decoration: underline; margin-bottom: 15px;">Verification</h3>
+        <p style="margin-top: 10px; line-height: 1.5; text-align: center;">I solemnly declare that to the best of my knowledge and belief the information given in this IT-10BB (2023) is correct and complete.</p>
+        <div class="right" style="margin-top: 60px; margin-right: 50px;">
+            Name & signature of the Taxpayer<br>
+            Date: ........................
+        </div>
+    </div>
+    <div class="footer-num">7</div>
+</div>
+
+<div class="page">
+    <div class="center bold" style="font-size: 13pt;">Statement of Assets, Liabilities and Expenses (as on ....................................)</div>
+    
+    <div style="border: 2px solid #000; padding: 5px; font-size: 10pt; margin: 10px 0;">
+        <div class="center bold" style="margin-bottom: 5px;">To Whom It May Concern</div>
+        <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+            <li>All Public Servants.</li>
+            <li>If the amount of Total Asset at home and abroad exceeds Taka 40,00,000</li>
+            <li>The amount of Total Asset does not exceed Tk. 40,00,000 but owns a Motor Car in any time or Invested in any House Popery or Apartment within the City Corporation area or Owns Assets outside Bangladesh or being a Shareholder Director of a Company.</li>
+            <li>Every Non-Bangladeshi and Non-Resident Bangladesh Natural Person shall submit the statement only in respect of Assets Located in Bangladesh.</li>
+        </ul>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; margin-bottom: 10px;">
+        <span class="bold">Name: </span>
+        <span class="input-dotted" style="flex-grow: 1; margin: 0 5px;"></span>
+        <span class="bold" style="margin-right: 5px;">TIN</span>
+        <div class="tin-grid">
+            <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+        </div>
+    </div>
+
+    <table class="compact-table" style="border: 2px solid #000;">
+        <thead>
+            <tr>
+                <th style="text-align: left; padding-left: 5px;">1. Sources of Fund:</th>
+                <th width="100">Amount (Tk.)</th>
+                <th width="100">Amount (Tk)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>&nbsp;&nbsp;&nbsp;(a) Total Income Shown in Return (Sl. No. 11 of Statement of Total Income)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(b) Tax Exempted Income (Pls see Instruction Page)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(c) Receipt of Gift and Others</td><td></td><td></td></tr>
+            <tr><td class="right">Total Source of Fund:</td><td></td><td></td></tr>
+            
+            <tr><td class="bold">2. Net Wealth as on Last Date of Previous Income Year</td><td></td><td></td></tr>
+            <tr><td class="bold">3. Sum of Source of Fund and Previous Year’s Net Wealth (1 + 2)</td><td></td><td></td></tr>
+            
+            <tr><td class="bold">4.</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(a) Expense relating to Lifestyle (as per IT-10BB)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(b) Gift / Expenses / Loss Not Mentioned in IT-10BB</td><td></td><td></td></tr>
+            <tr><td class="right">Total Expense and Loss:</td><td></td><td></td></tr>
+            
+            <tr><td class="bold">5. Net Wealth at the Last Date of this Financial Year (3 – 4)</td><td></td><td></td></tr>
+            
+            <tr><td class="bold">6. Personal Liabilities Outside Business</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(a) Institutional Liabilities</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(b) Non-Institutional Liabilities</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(c) Other Liabilities</td><td></td><td></td></tr>
+            <tr><td class="right">Total Liabilities Outside Business:</td><td></td><td></td></tr>
+            
+            <tr><td class="bold">7. Gross Wealth (5 + 6)</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>
+            
+            <tr><td colspan="3" class="bold" style="border-bottom: 1px solid #000;">8. Particulars of Assets (if needed attach separate sheet)</td></tr>
+            
+            <tr><td>&nbsp;&nbsp;&nbsp;(a) Total Asset of Business</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Less: Business Liabilities (Institutional & Non-Institutional)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(b) Director’s Shareholdings in the Companies</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(c) Business Capital of Partnership Firm</td><td></td><td></td></tr>
+            <tr>
+                <td>
+                    &nbsp;&nbsp;&nbsp;(d) Non-Agricultural Property / land / House Property<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Acquisition / Cost Value with Legal Expense / Acquired Price / Building<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cost / Investment)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Location and Description of Non-Agricultural Property<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(use separate sheet if needed)
+                </td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>
+                    &nbsp;&nbsp;&nbsp;(e) Agricultural Property<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Acquisition / Cost Value with Legal Expense)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Location and Description of Non-Agricultural Property<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(use separate sheet if needed)
+                </td>
+                <td></td><td></td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="footer-num">8</div>
+</div>
+
+<div class="page">
+    <table class="compact-table" style="border: 2px solid #000;">
+        <tbody>
+            <tr>
+                <td>
+                    &nbsp;&nbsp;&nbsp;(f) Financial Assets:
+                </td>
+                <td width="100"></td>
+                <td width="100"></td>
+            </tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) Share / Debenture / Bond / Securities / Unit Certificate etc.</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ii) Sanchaypatra / Deposit Pension Scheme</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iii) Loan Given (Mention Name & NID of Loan Receiver)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iv) Savings Deposit / Term Deposit</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(v) Provident Fund or Other Fund (if any)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vi) Other Investment</td><td></td><td></td></tr>
+            <tr><td class="right">Total Financial Assets:</td><td></td><td></td></tr>
+            
+            <tr>
+                <td>
+                    &nbsp;&nbsp;&nbsp;(g) Motor Vehicle(s)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Cost Value including Registration Expense)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Mention Type and Registration Number of Motor Vehicle)
+                </td>
+                <td></td><td></td>
+            </tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(h) Ornaments (Mention Quantity)</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(i) Furniture and Electronic Items</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;(j) Other Assets (Except Assets Mentioned in Sl. k)</td><td></td><td></td></tr>
+            
+            <tr><td>&nbsp;&nbsp;&nbsp;(k) Cash in Hand and Fund Outside Business</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) Bank Balance</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ii) Cash in Hand</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iii) Others</td><td></td><td></td></tr>
+            
+            <tr><td class="right">Total Cash in Hand and Fund Outside Business:</td><td></td><td></td></tr>
+            <tr><td class="bold">9. Asset Outside Bangladesh</td><td></td><td></td></tr>
+            <tr><td class="bold">10. Total Assets in Bangladesh and Outside Bangladesh (8 + 9)</td><td></td><td></td></tr>
+        </tbody>
+    </table>
+
+    <div class="verify-box" style="margin-top: 50px;">
+        <h3 class="center bold" style="text-decoration: underline; margin-bottom: 15px;">Verification</h3>
+        <p style="margin-top: 10px; line-height: 1.5; text-align: center;">I solemnly declare that to the best of my knowledge and belief the information given in this IT-10B (2023) is correct and complete.</p>
+        <div class="right" style="margin-top: 60px; margin-right: 50px;">
+            Name & Signature of the Taxpayer<br>
+            Date: ........................
+        </div>
+    </div>
+    <div class="footer-num">9</div>
+</div>
+
+<div class="page page-10">
+    
+    <div style="text-align: center; font-weight: bold; font-size: 14pt; text-decoration: underline; margin-bottom: 20px;">
+        Instructions to fill up the Return Form
+    </div>
+
+    <div class="instruction-box">
+        <div class="box-header">Instructions:</div>
+
+        <table class="list-table">
+            <tr>
+                <td class="col-num">(1)</td>
+                <td class="justify">This Return of Income shall be Signed and Verified by the Taxpayer or his Authorized Representative as prescribed in the Income Tax Act, 2023.</td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(2)</td>
+                <td class="justify">
+                    <div style="margin-bottom: 2px; text-decoration: underline;">Enclose where applicable:</div>
+                    <table class="list-table">
+                        <tr>
+                            <td class="col-sub-num">(a)</td>
+                            <td class="justify">Salary statement for salary; Bank statement for interest; Certificate for interest on savings instruments; Rent agreement, receipts of municipal tax & land revenue, statement of house property loan interest, insurance premium for house property income; Statement of Professional income as per IT Rule-8; Copy of assessment/ income statement & balance sheet for partnership income; Documents of capital gain; Dividend warrant for dividend income; Statement of other income; Documents in support of investments in savings certificates, LIP, DPS, Zakat, stock/share etc.</td>
+                        </tr>
+                        <tr>
+                            <td class="col-sub-num">(b)</td>
+                            <td class="justify">Depreciation Chart claiming depreciation as per the Income Tax Act, 2023;</td>
+                        </tr>
+                        <tr>
+                            <td class="col-sub-num">(c)</td>
+                            <td class="justify">Computation of Income according to the Income Tax Act, 2023.</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(3)</td>
+                <td class="justify">
+                    <div style="margin-bottom: 2px; text-decoration: underline;">Enclose Separate Statement for:</div>
+                    <table class="list-table">
+                        <tr>
+                            <td class="col-sub-num">(a)</td>
+                            <td class="justify">any income of the spouse of the Taxpayer (if she/he is not an Taxpayer), minor children and dependent;</td>
+                        </tr>
+                        <tr>
+                            <td class="col-sub-num">(b)</td>
+                            <td class="justify">Tax exempted / Tax free Income.</td>
+                        </tr>
+                        <tr>
+                            <td class="col-sub-num">(c)</td>
+                            <td class="justify">Income Exempted from Tax declared under Part 1 of the Sixth Schedule of the Income Tax Act, 2023.</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(4)</td>
+                <td class="justify">Documents furnished to support the declaration should be signed by the Taxpayer or his/her authorized representative.</td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(5)</td>
+                <td class="justify">
+                    <div style="margin-bottom: 2px; text-decoration: underline;">Furnish the following information:</div>
+                    <table class="list-table">
+                        <tr>
+                            <td class="col-sub-num">(a)</td>
+                            <td class="justify">Name, address & TIN of the partners if the Taxpayer is a firm;</td>
+                        </tr>
+                        <tr>
+                            <td class="col-sub-num">(b)</td>
+                            <td class="justify">Name of firm, address & TIN if the Taxpayer is a partner;</td>
+                        </tr>
+                        <tr>
+                            <td class="col-sub-num">(c)</td>
+                            <td class="justify">Name of the company, address & TIN if the Taxpayer is a director.</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(6)</td>
+                <td class="justify">Assets and liabilities of self, spouse (if she/he is not a Taxpayer), minor children and dependant(s) to be shown in the IT-10B (2023).</td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(7)</td>
+                <td class="justify">Signature is mandatory for all Taxpayer or his / her authorized representative.</td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(8)</td>
+                <td class="justify">For Individual Person, signature is also mandatory in IT-10B (2023) & IT-10BB (2023).</td>
+            </tr>
+
+            <tr>
+                <td class="col-num">(9)</td>
+                <td class="justify">If needed, please use separate sheet.</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer-num">10</div>
+</div>
+
+</body>
+</html>
