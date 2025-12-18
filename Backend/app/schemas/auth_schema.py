@@ -11,6 +11,8 @@ class UserRead(BaseModel):
     name: str
     email: EmailStr
     is_active: bool
+    nid: str | None = None
+    tin: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,3 +46,9 @@ class ChangePasswordRequest(BaseModel):
 
 class DeleteAccountRequest(BaseModel):
     confirm: bool = True
+
+class ProfileUpdateRequest(BaseModel):
+    # Optional fields for partial profile updates
+    name: str | None = None
+    nid: str | None = None
+    tin: str | None = None

@@ -12,3 +12,4 @@ openai
 pinecone
 PyPDF2
 tiktoken
+python-multipart

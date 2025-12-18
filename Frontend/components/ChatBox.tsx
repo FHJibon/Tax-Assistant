@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Send, Bot, User, Sparkles } from 'lucide-react'
+import { Send, User, Sparkles } from 'lucide-react'
 import { taxAPI } from '@/lib/api'
 
 interface Message {

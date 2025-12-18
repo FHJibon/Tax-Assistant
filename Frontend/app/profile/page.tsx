@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import { useSearchParams } from 'next/navigation'
+import { authAPI, userAPI } from '@/lib/api'
 import { useAuth } from '@/lib/auth-provider'
 import { useI18n } from '@/lib/i18n-provider'
 import { Navbar } from '@/components/Navbar'
@@ -29,9 +31,12 @@ import {
 export default function ProfilePage() {
   const { t, language, setLanguage } = useI18n()
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   
   const [isEditing, setIsEditing] = React.useState(false)
   const [showSaveSuccess, setShowSaveSuccess] = React.useState(false)
+  const [saveMsg, setSaveMsg] = React.useState('')
+  const [saveBusy, setSaveBusy] = React.useState(false)
   const [profile, setProfile] = React.useState({
     name: '',
     email: '',
@@ -56,7 +61,24 @@ export default function ProfilePage() {
   const dobTriggerRef = React.useRef<HTMLButtonElement | null>(null)
   const [triggerWidth, setTriggerWidth] = React.useState<number | undefined>(undefined)
 
+  // Derived validations for Bangladeshi IDs
+  const nidValid = React.useMemo(() => {
+    const s = (profile.nid || '').trim()
+    return /^[0-9]{13}$/.test(s) || /^[0-9]{17}$/.test(s)
+  }, [profile.nid])
+
+  const tinValid = React.useMemo(() => {
+    const s = (profile.tin || '').trim()
+    return /^[0-9]{12}$/.test(s)
+  }, [profile.tin])
+
   React.useEffect(() => {
+    // Auto-open edit mode when requested via query param
+    const editParam = searchParams?.get('edit')
+    if (editParam === '1' || editParam === 'true') {
+      setIsEditing(true)
+    }
+
     // Prefer saved profile; otherwise hydrate from auth user
     const savedProfile = localStorage.getItem('userProfile')
     if (savedProfile) {
@@ -67,8 +89,23 @@ export default function ProfilePage() {
         name: user.name || prev.name,
         email: user.email || prev.email,
       }))
+      // Fetch latest profile from backend if available
+      authAPI.me()
+        .then(res => {
+          const u = res.data
+          setProfile(prev => ({
+            ...prev,
+            name: u?.name ?? prev.name,
+            email: u?.email ?? prev.email,
+            nid: u?.nid ?? prev.nid,
+            tin: u?.tin ?? prev.tin,
+          }))
+        })
+        .catch(() => {
+          // Silently ignore if not available; keep local values
+        })
     }
-  }, [user])
+  }, [user, searchParams])
 
   React.useEffect(() => {
     if (profile.dateOfBirth) {
@@ -89,16 +126,36 @@ export default function ProfilePage() {
     return () => window.removeEventListener('resize', updateWidth)
   }, [isEditing])
   
-  const handleSaveProfile = () => {
-    // Save profile to localStorage
-    localStorage.setItem('userProfile', JSON.stringify(profile))
-    setIsEditing(false)
-    setShowSaveSuccess(true)
-    
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      setShowSaveSuccess(false)
-    }, 3000)
+  const handleSaveProfile = async () => {
+    if (!nidValid || !tinValid) return
+    setSaveMsg('')
+    setSaveBusy(true)
+    try {
+      const res = await userAPI.updateProfile({
+        name: profile.name,
+        nid: profile.nid,
+        tin: profile.tin,
+      })
+      const updated = res.data
+      // Persist minimal profile locally for client gating flows
+      const local = {
+        ...profile,
+        name: updated?.name ?? profile.name,
+        email: updated?.email ?? profile.email,
+        nid: updated?.nid ?? profile.nid,
+        tin: updated?.tin ?? profile.tin,
+      }
+      localStorage.setItem('userProfile', JSON.stringify(local))
+      setProfile(local)
+      setIsEditing(false)
+      setShowSaveSuccess(true)
+      setTimeout(() => setShowSaveSuccess(false), 3000)
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Failed to save profile'
+      setSaveMsg(msg)
+    } finally {
+      setSaveBusy(false)
+    }
   }
 
   return (
@@ -116,25 +173,38 @@ export default function ProfilePage() {
       
       <div className="container mx-auto px-4 max-w-7xl h-screen overflow-y-auto scrollbar-hide pt-20">
         {/* Success Message */}
-        {showSaveSuccess && (
+        {(showSaveSuccess || saveMsg) && (
           <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
-            <Card className="border-2 border-green-500/30 bg-green-950/20 backdrop-blur-xl">
+            <Card className={`backdrop-blur-xl ${saveMsg ? 'border-2 border-red-500/30 bg-red-950/20' : 'border-2 border-green-500/30 bg-green-950/20'}` }>
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
+                  <CheckCircle className={`h-5 w-5 flex-shrink-0 ${saveMsg ? 'text-red-400' : 'text-green-400'}`} />
                   <div>
-                    <p className="text-green-400 font-semibold">
-                      {language === 'bn' ? 'প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে!' : 'Profile saved successfully!'}
-                    </p>
-                    <p className="text-sm text-gray-300">
-                      {language === 'bn' ? 'আপনি এখন ডকুমেন্ট আপলোড করতে পারবেন' : 'You can now upload documents'}
-                    </p>
+                    {saveMsg ? (
+                      <>
+                        <p className="font-semibold text-red-400">
+                          {language === 'bn' ? 'প্রোফাইল সংরক্ষণ ব্যর্থ হয়েছে' : 'Profile save failed'}
+                        </p>
+                        <p className="text-sm text-gray-300">{saveMsg}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-green-400 font-semibold">
+                          {language === 'bn' ? 'প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে!' : 'Profile saved successfully!'}
+                        </p>
+                        <p className="text-sm text-gray-300">
+                          {language === 'bn' ? 'আপনি এখন ডকুমেন্ট আপলোড করতে পারবেন' : 'You can now upload documents'}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         )}
+
+        {/* Removed inline profile prompt; upload flow will handle popup */}
 
         <div className="text-center mb-6 md:mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -309,6 +379,11 @@ export default function ProfilePage() {
                       disabled={!isEditing}
                       placeholder="Enter your National ID"
                     />
+                    {isEditing && profile.nid && !nidValid && (
+                      <div className="text-xs text-red-400">
+                        {language === 'bn' ? 'NID ১৩ বা ১৭ সংখ্যার হতে হবে' : 'NID must be 13 or 17 digits'}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -324,6 +399,11 @@ export default function ProfilePage() {
                       disabled={!isEditing}
                       placeholder="Enter your TIN"
                     />
+                    {isEditing && profile.tin && !tinValid && (
+                      <div className="text-xs text-red-400">
+                        {language === 'bn' ? 'TIN ১২ সংখ্যার হতে হবে' : 'TIN must be 12 digits'}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2 md:col-span-2">
@@ -343,9 +423,9 @@ export default function ProfilePage() {
 
                 {isEditing && (
                   <div className="flex space-x-4 pt-4">
-                    <Button onClick={handleSaveProfile} className="flex-1">
+                    <Button onClick={handleSaveProfile} className="flex-1" disabled={!nidValid || !tinValid || saveBusy}>
                       <Save className="h-4 w-4 mr-2" />
-                      {language === 'bn' ? 'পরিবর্তন সংরক্ষণ' : 'Save Changes'}
+                      {saveBusy ? (language === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') : (language === 'bn' ? 'পরিবর্তন সংরক্ষণ' : 'Save Changes')}
                     </Button>
                     <Button variant="outline" onClick={() => setIsEditing(false)}>
                       {language === 'bn' ? 'বাতিল' : 'Cancel'}
@@ -440,7 +520,7 @@ export default function ProfilePage() {
       {delOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm">
-            <Card className="border border-white/10 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 animate-slide-in">
+            <Card className="border border-white/10 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 animate-bounce-in">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl font-bold text-white">
                   {language === 'bn' ? 'অ্যাকাউন্ট মুছুন' : 'Delete Account'}
@@ -494,9 +574,9 @@ export default function ProfilePage() {
         </div>
       )}
       {cpOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
           <div className="w-full max-w-sm">
-            <Card className="border border-white/10 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90">
+            <Card className="border border-white/10 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 animate-bounce-in">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl font-bold text-white">Change Password</CardTitle>
                 <CardDescription className="text-gray-400">Enter current and new password</CardDescription>

@@ -4,7 +4,10 @@ import React from 'react'
 import { useI18n } from '@/lib/i18n-provider'
 // Removed unused Card imports
 import { Button } from '@/components/ui/button'
-import { Upload, File, X, CheckCircle } from 'lucide-react'
+import api from '@/lib/api'
+import Link from 'next/link'
+import { Modal } from '@/components/ui/modal'
+import { Upload } from 'lucide-react'
 // animations removed to avoid hydration issues
 
 interface FileItem {
@@ -39,6 +42,8 @@ export function FileUploader({
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [statusMessage, setStatusMessage] = React.useState<string>("")
   const [statusType, setStatusType] = React.useState<'info' | 'error' | 'success'>("info")
+  const [showPopup, setShowPopup] = React.useState(false)
+  const [popupMessage, setPopupMessage] = React.useState('')
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -132,34 +137,52 @@ export function FileUploader({
     )
     setStatusType('success')
 
-    // Simulate upload process
+    // Upload to backend
     fileItems.forEach((fileItem, index) => {
-      simulateUpload(fileItem.id, validFiles[index])
+      uploadFile(fileItem.id, validFiles[index])
     })
 
     onFilesUpload?.(validFiles)
   }
 
-  const simulateUpload = (fileId: string, file: File) => {
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 30
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(interval)
-        setFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, status: 'success', progress: 100 }
-            : f
-        ))
-      } else {
-        setFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, progress }
-            : f
-        ))
-      }
-    }, 200)
+  const uploadFile = async (fileId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          const total = e.total || file.size
+          const progress = total ? Math.round((e.loaded * 100) / total) : 0
+          setFiles(prev => prev.map(f =>
+            f.id === fileId ? { ...f, progress } : f
+          ))
+        }
+      })
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'success', progress: 100 }
+          : f
+      ))
+      setStatusMessage(`Uploaded ${file.name}`)
+      setStatusType('success')
+    } catch (err: any) {
+      // Show popup on any upload error with backend-provided detail
+      const code = err?.response?.status
+      const detail = err?.response?.data?.detail || 'Failed to upload'
+      setStatusMessage(detail)
+      setStatusType('error')
+      setPopupMessage(detail)
+      setShowPopup(true)
+      setFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: 'error' }
+          : f
+      ))
+      // Keep a generic inline message as well
+      setStatusMessage(`Failed to upload ${file.name}`)
+      setStatusType('error')
+    }
   }
 
   const removeFile = (fileId: string) => {
@@ -171,6 +194,7 @@ export function FileUploader({
   }
 
   return (
+    <>
     <div className="space-y-4">
         {/* Status message */}
         {statusMessage && (
@@ -230,5 +254,23 @@ export function FileUploader({
 
 
     </div>
+
+    {/* Blue, centered modal popup for profile completion */}
+    <Modal
+      open={showPopup}
+      title="Complete your profile"
+      onClose={() => setShowPopup(false)}
+      actions={
+        <>
+          <Button variant="ghost" className="text-white/90" onClick={() => setShowPopup(false)}>Cancel</Button>
+          <Link href="/profile?edit=1">
+            <Button className="bg-white text-blue-900 hover:opacity-95">Edit Profile</Button>
+          </Link>
+        </>
+      }
+    >
+      {/* No body text per request */}
+    </Modal>
+    </>
   )
 }

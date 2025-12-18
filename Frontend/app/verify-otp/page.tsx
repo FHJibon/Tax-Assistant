@@ -47,6 +47,14 @@ function VerifyOTPInner() {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus()
     }
+    if (e.key === 'Enter') {
+      const otpCode = otp.join('')
+      if (otpCode.length === 6) {
+        e.preventDefault()
+        // Trigger verification when Enter is pressed and code complete
+        handleVerify()
+      }
+    }
   }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {

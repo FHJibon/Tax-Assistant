@@ -82,51 +82,11 @@ export const taxAPI = {
   // Increase timeout for chat since LLM responses can take longer than 10s
   sendChatMessage: (message: string, topK: number = 5, timeoutMs: number = 30000) =>
     api.post('/chat/', { message, top_k: topK }, { timeout: timeoutMs }),
-  
-  getChatHistory: (sessionId: string) =>
-    api.get(`/chat/history/${sessionId}`),
-  
-  // Document upload endpoints
-  uploadDocument: (file: FormData) =>
-    api.post('/documents/upload', file, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }),
-  
-  getDocuments: () => api.get('/documents'),
-  
-  deleteDocument: (documentId: string) =>
-    api.delete(`/documents/${documentId}`),
-  
-  // Tax calculation endpoints
-  calculateTax: (taxData: any) =>
-    api.post('/tax/calculate', taxData),
-  
-  getTaxReturns: () => api.get('/tax/returns'),
-  
-  createTaxReturn: (returnData: any) =>
-    api.post('/tax/returns', returnData),
-  
-  updateTaxReturn: (returnId: string, returnData: any) =>
-    api.put(`/tax/returns/${returnId}`, returnData),
-  
-  submitTaxReturn: (returnId: string) =>
-    api.post(`/tax/returns/${returnId}/submit`),
 }
 
 export const userAPI = {
-  getProfile: () => api.get('/user/profile'),
-  
   updateProfile: (profileData: any) =>
     api.put('/user/profile', profileData),
-  
-  getDashboard: () => api.get('/user/dashboard'),
-  
-  getNotifications: () => api.get('/user/notifications'),
-  
-  markNotificationRead: (notificationId: string) =>
-    api.put(`/user/notifications/${notificationId}/read`),
 }
 
 // Utility functions

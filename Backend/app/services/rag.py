@@ -38,7 +38,8 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7) -
             "Context Usage:\n"
             "- ANSWER PRIMARILY BASED ON THE CONTEXT below.\n"
             "- If the context covers the answer, do not add external info.\n"
-            "- Only if the context is partial, supplement with your expert knowledge."
+            "- Only if the context is partial, supplement with your expert knowledge.\n"
+            "- Keep it concise: no more than 3 sentences or 3 bullet points."
         )
     else:
         numbered_context = "(No relevant legal documents found in database)"
@@ -47,7 +48,8 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7) -
             "- No relevant internal documents were found for this specific query.\n"
             "- Answer entirely based on your general knowledge as a Senior Tax Lawyer.\n"
             "- Do not cite references as there is no context.\n"
-            "- State clearly what the general law is in Bangladesh."
+            "- State clearly what the general law is in Bangladesh.\n"
+            "- Keep it concise: no more than 3 sentences or 3 bullet points."
         )
 
     lang = _detect_language(query)
@@ -58,10 +60,11 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7) -
     )
 
     system_prompt = (
-        "You are a senior Bangladeshi tax lawyer. Specialize in the Bangladesh Income Tax Act, "
-        "Answer clearly, Shortly, precisely, professionally, and accurately. "
+        "You are a senior Bangladeshi tax lawyer. Specialize in the Bangladesh Income Tax Act. "
+        "Answer clearly, shortly, precisely, and accurately. "
         + target_lang_instruction + " If the provided context or citations are in a different language, "
-        "translate them and present the final answer strictly in the target language. Do not mix languages."
+        "translate them and present the final answer strictly in the target language. Do not mix languages. "
+        "Limit your response to a maximum of 3 sentences or 3 bullet points."
     )
 
     user_prompt = (
@@ -77,6 +80,7 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7) -
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.3 if is_rag_mode else 0.5,
+        max_tokens=400,
     )
 
     answer = res.choices[0].message.content

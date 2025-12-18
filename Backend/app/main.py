@@ -2,11 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import traceback
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.model.model import Base
 from app.api.endpoints.auth import router as auth_router
 from app.api.endpoints.chatbot import router as chat_router
-from app.utils.db import get_db
+from app.api.endpoints.upload import router as upload_router
+from app.services.user import router as user_router
 
 app = FastAPI(title="Tax Assistant")
 
@@ -30,6 +30,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(chat_router)
+app.include_router(upload_router)
+app.include_router(user_router)
 
 @app.get("/")
 async def root():
