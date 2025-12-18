@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n-provider'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/lib/auth-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/Navbar'
 import { 
@@ -22,6 +23,7 @@ import {
 
 export default function HomePage() {
   const { t, language } = useI18n()
+  const { isAuthenticated, initialized } = useAuth()
 
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => { setMounted(true) }, [])
@@ -281,16 +283,18 @@ export default function HomePage() {
               {t('landing.cta2.desc')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup">
-                <Button size="lg" className={`text-lg px-8 py-3 group hover:shadow-2xl hover:scale-110 transition-all duration-500 animate-fade-in-scale animation-delay-200 relative overflow-hidden ${
-                  language === 'bn' ? 'bangla-text' : ''
-                }`}>
-                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
-                  <Sparkles className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
-                  {t('landing.cta2.start')}
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                </Button>
-              </Link>
+              {!isAuthenticated && initialized && (
+                <Link href="/signup">
+                  <Button size="lg" className={`text-lg px-8 py-3 group hover:shadow-2xl hover:scale-110 transition-all duration-500 animate-fade-in-scale animation-delay-200 relative overflow-hidden ${
+                    language === 'bn' ? 'bangla-text' : ''
+                  }`}>
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
+                    <Sparkles className="mr-2 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
+                    {t('landing.cta2.start')}
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
+                  </Button>
+                </Link>
+              )}
               <Link href="/workspace">
                 <Button variant="outline" size="lg" className={`text-lg px-8 py-3 group hover:shadow-xl hover:scale-110 hover:border-primary hover:bg-primary/5 transition-all duration-500 animate-fade-in-scale animation-delay-400 ${
                   language === 'bn' ? 'bangla-text' : ''
