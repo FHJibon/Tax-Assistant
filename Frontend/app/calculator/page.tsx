@@ -19,7 +19,8 @@ export default function CalculatorPage() {
   const { t, language } = useI18n()
   
   const [income, setIncome] = React.useState({
-    monthlySalary: ''
+    monthlySalary: '',
+    category: 'general' as 'general' | 'women_senior' | 'disabled'
   })
   
   // Deductions removed per request
@@ -30,40 +31,55 @@ export default function CalculatorPage() {
     totalTax: number
   } | null>(null)
 
+  // Exemption map used both in UI and calculation
+  const EXEMPTION_MAP: Record<'general' | 'women_senior' | 'disabled', number> = {
+    general: 350000,
+    women_senior: 400000,
+    disabled: 475000,
+  }
+
   const calculateTax = () => {
-    // Only use monthly salary, annualize it
+    // Annualize monthly salary
     const monthlySalary = Number(income.monthlySalary || 0)
     const totalIncome = monthlySalary * 12
-    // Bangladesh tax slabs (2024-25)
-    const exemptionLimit = 350000
-    let taxableIncome = totalIncome - exemptionLimit
-    if (taxableIncome < 0) taxableIncome = 0
+
+    const exemptionLimit = EXEMPTION_MAP[income.category]
+
+    // Taxable income after exemption
+    let remaining = totalIncome - exemptionLimit
+    if (remaining < 0) remaining = 0
+
+    // Progressive slabs per NBR (post-exemption):
+    // Next 100,000 at 5%
+    // Next 300,000 at 10%
+    // Next 400,000 at 15%
+    // Next 500,000 at 20%
+    // Remaining at 25%
     let tax = 0
-    // Tax calculation based on Bangladesh slabs
-    if (taxableIncome <= 100000) {
-      tax = 0
-    } else if (taxableIncome <= 400000) {
-      tax = (taxableIncome - 100000) * 0.05
-    } else if (taxableIncome <= 700000) {
-      tax = 15000 + (taxableIncome - 400000) * 0.10
-    } else if (taxableIncome <= 1100000) {
-      tax = 45000 + (taxableIncome - 700000) * 0.15
-    } else if (taxableIncome <= 1600000) {
-      tax = 105000 + (taxableIncome - 1100000) * 0.20
-    } else {
-      tax = 205000 + (taxableIncome - 1600000) * 0.25
+    const applySlab = (amount: number, rate: number) => {
+      const take = Math.max(0, Math.min(remaining, amount))
+      tax += take * rate
+      remaining -= take
     }
-    // Remove minimum tax floor per request; show slab-based tax only
+
+    applySlab(100000, 0.05)
+    applySlab(300000, 0.10)
+    applySlab(400000, 0.15)
+    applySlab(500000, 0.20)
+    if (remaining > 0) tax += remaining * 0.25
+
+    // No minimum tax floor applied here (per earlier requirement)
     if (totalIncome === 0) tax = 0
+
     setResult({
       totalIncome,
-      taxableIncome,
-      totalTax: tax
+      taxableIncome: Math.max(0, totalIncome - exemptionLimit),
+      totalTax: Math.round(tax)
     })
   }
 
   const resetCalculator = () => {
-    setIncome({ monthlySalary: '' })
+    setIncome({ monthlySalary: '', category: 'general' })
     setResult(null)
   }
 
@@ -103,9 +119,9 @@ export default function CalculatorPage() {
 
         <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
           {/* Input Section */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* Income Section (Only Monthly Salary) */}
-            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hover:shadow-2xl transition-all duration-500">
+          <div className="space-y-4 md:space-y-6 flex flex-col lg:col-span-2">
+            {/* Income Section */}
+            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hover:shadow-2xl transition-all duration-300 flex-1">
               <CardHeader>
                 <CardTitle className={`flex items-center space-x-2 ${
                   language === 'bn' ? 'bangla-text' : ''
@@ -130,13 +146,39 @@ export default function CalculatorPage() {
                     type="number"
                     placeholder="0"
                     value={income.monthlySalary}
-                    onChange={(e) => setIncome({ monthlySalary: e.target.value })}
+                    onChange={(e) => setIncome({ ...income, monthlySalary: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {language === 'bn'
                       ? `বার্ষিক আয়: ৳ ${(Number(income.monthlySalary || 0) * 12).toLocaleString()}`
                       : `Annual Income: ৳ ${(Number(income.monthlySalary || 0) * 12).toLocaleString()}`}
                   </p>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className={`text-sm font-medium ${language === 'bn' ? 'bangla-text' : ''}`}>
+                    {language === 'bn' ? 'করদাতার শ্রেণী' : 'Taxpayer Category'}
+                  </label>
+                  <select
+                    className="w-full h-11 rounded-md border border-input bg-background px-3 py-2 text-sm transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 hover:border-blue-400"
+                    value={income.category}
+                    onChange={(e) => setIncome({ ...income, category: e.target.value as any })}
+                  >
+                    <option value="general">{language === 'bn' ? 'সাধারণ করদাতা' : 'General'}</option>
+                    <option value="women_senior">{language === 'bn' ? 'মহিলা/জ্যেষ্ঠ নাগরিক' : 'Women/Senior (65+)'}
+                    </option>
+                    <option value="disabled">{language === 'bn' ? 'প্রতিবন্ধী' : 'Persons with Disability'}</option>
+                  </select>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-blue-500/10 text-blue-600 ring-1 ring-blue-500/20">
+                      {income.category === 'general' && (language === 'bn' ? 'সাধারণ' : 'General')}
+                      {income.category === 'women_senior' && (language === 'bn' ? 'মহিলা/জ্যেষ্ঠ' : 'Women/Senior')}
+                      {income.category === 'disabled' && (language === 'bn' ? 'প্রতিবন্ধী' : 'Disability')}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {language === 'bn' ? 'করমুক্ত সীমা:' : 'Exemption:'} ৳ {EXEMPTION_MAP[income.category].toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -157,10 +199,10 @@ export default function CalculatorPage() {
           </div>
 
           {/* Results Section */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col lg:col-span-1">
             {result ? (
               <>
-                <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hover:shadow-2xl transition-all duration-500">
+                <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hover:shadow-2xl transition-all duration-300 flex-1">
                   <CardHeader>
                     <CardTitle className={`text-center ${
                       language === 'bn' ? 'bangla-text' : ''
@@ -205,15 +247,15 @@ export default function CalculatorPage() {
                 </Card>
               </>
             ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <CalculatorIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <Card className="flex-1 min-h-[280px]">
+                <CardContent className="h-full flex flex-col items-center justify-center text-center">
+                  <CalculatorIcon className="h-16 w-16 mb-4 text-muted-foreground" />
                   <p className={`text-muted-foreground ${
                     language === 'bn' ? 'bangla-text' : ''
                   }`}>
                     {language === 'bn' 
-                      ? 'আপনার আয় এবং ছাড় লিখুন, তারপর কর গণনা করুন' 
-                      : 'Enter your income and deductions, then calculate tax'}
+                      ? 'পরিমাণ লিখুন, তারপর কর গণনা করুন' 
+                      : 'Enter your amount, then calculate tax'}
                   </p>
                 </CardContent>
               </Card>

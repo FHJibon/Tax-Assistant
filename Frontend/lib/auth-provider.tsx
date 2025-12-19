@@ -21,15 +21,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check token on mount
-    const token = getAuthToken()
-    const userEmail = localStorage.getItem('userEmail')
-    const userName = localStorage.getItem('userName')
-    if (token) {
-      setIsAuthenticated(true)
-      if (userEmail) setUser({ email: userEmail, name: userName || undefined })
+    // Verify token with backend on mount to avoid stale local cache
+    const init = async () => {
+      const token = getAuthToken()
+      if (!token) { setInitialized(true); return }
+      try {
+        const me = await authAPI.me()
+        const u = me?.data
+        const name = u?.name as string | undefined
+        const emailFinal = u?.email as string | undefined
+        setIsAuthenticated(true)
+        setUser({ email: emailFinal || '', name })
+        if (emailFinal) localStorage.setItem('userEmail', emailFinal)
+        if (name) localStorage.setItem('userName', name)
+        // Sync minimal profile cache
+        const existingProfileRaw = localStorage.getItem('userProfile')
+        const existingProfile = existingProfileRaw ? JSON.parse(existingProfileRaw) : {}
+        const newProfile = {
+          ...existingProfile,
+          name: name || existingProfile.name || '',
+          email: emailFinal || existingProfile.email || '',
+        }
+        localStorage.setItem('userProfile', JSON.stringify(newProfile))
+      } catch (err: any) {
+        // Token invalid or user missing -> clear client cache and force login
+        removeAuthToken()
+        localStorage.removeItem('userEmail')
+        localStorage.removeItem('userName')
+        localStorage.removeItem('userProfile')
+        setIsAuthenticated(false)
+        setUser(null)
+        router.replace('/login')
+      } finally {
+        setInitialized(true)
+      }
     }
-    setInitialized(true)
+    init()
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {

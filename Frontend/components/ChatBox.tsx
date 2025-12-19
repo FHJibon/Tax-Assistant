@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useI18n } from '@/lib/i18n-provider'
+import { useAuth } from '@/lib/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,6 +22,7 @@ interface ChatBoxProps {
 
 export function ChatBox({ className }: ChatBoxProps) {
   const { t } = useI18n()
+  const { user } = useAuth()
   const [messages, setMessages] = React.useState<Message[]>([])
   const [inputMessage, setInputMessage] = React.useState('')
   const [isTyping, setIsTyping] = React.useState(false)
@@ -49,16 +51,29 @@ export function ChatBox({ className }: ChatBoxProps) {
     }
   }
 
-  // Initialize welcome message on client to avoid SSR hydration mismatch with Date
+  // Load history on mount; if empty, keep chat blank (we show a centered greeting instead)
   React.useEffect(() => {
-    setMessages([
-      {
-        id: '1',
-        content: t('chat.welcome'),
-        sender: 'assistant',
-        timestamp: new Date(),
-      },
-    ])
+    let cancelled = false
+    const load = async () => {
+      try {
+        const { data } = await taxAPI.getHistory()
+        const items = Array.isArray(data?.messages) ? data.messages : []
+        if (cancelled) return
+        if (items.length) {
+          const mapped: Message[] = items.map((m: any, idx: number) => ({
+            id: String(m.id ?? idx + 1),
+            content: String(m.content ?? ''),
+            sender: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+            timestamp: new Date(m.created_at || Date.now())
+          }))
+          setMessages(mapped)
+        }
+      } catch (err) {
+        // If history fails, leave messages empty and still allow new chat
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [t])
 
   const sendMessage = async () => {
@@ -74,8 +89,6 @@ export function ChatBox({ className }: ChatBoxProps) {
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     setIsTyping(true)
-    // try to scroll after the user message is added
-    setTimeout(() => scrollToBottom('auto'), 50)
 
     try {
       const { data } = await taxAPI.sendChatMessage(userMessage.content, 5)
@@ -96,7 +109,6 @@ export function ChatBox({ className }: ChatBoxProps) {
       setMessages(prev => [...prev, assistantMessage])
     } finally {
       setIsTyping(false)
-      setTimeout(() => scrollToBottom('auto'), 50)
     }
   }
 
@@ -109,26 +121,44 @@ export function ChatBox({ className }: ChatBoxProps) {
 
   // Auto-scroll to the bottom when messages update or typing state changes
   React.useEffect(() => {
-    const raf = requestAnimationFrame(() => scrollToBottom('smooth'))
-    const t = setTimeout(() => scrollToBottom('auto'), 150)
-    return () => {
-      cancelAnimationFrame(raf)
-      clearTimeout(t)
-    }
+    scrollToBottom('smooth')
   }, [messages, isTyping])
+
+  const displayName = React.useMemo(() => {
+    if (user?.name && user.name.trim().length > 0) return user.name.trim()
+    if (user?.email) return user.email.split('@')[0]
+    return ''
+  }, [user])
 
   return (
     <Card className={`flex flex-col ${className || ''}`}>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
         {/* Messages Area */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 min-h-0 scrollbar-hide">
-          {messages.map((message, index) => (
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 min-h-0 scrollbar-hide"
+        >
+          {messages.length === 0 && !isTyping ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center max-w-xl animate-fade-in-scale">
+                <div className="inline-flex items-center justify-center mb-4 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <h2 className="text-xl md:text-2xl font-semibold mb-2">
+                  {displayName ? `Hello, ${displayName}.` : 'Hello.'}
+                </h2>
+                <p className="text-sm md:text-base text-gray-400">
+                  How can I help you with your tax questions today?
+                </p>
+              </div>
+            </div>
+          ) : (
+            messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${
                   message.sender === 'user' ? 'justify-end' : 'justify-start'
                 } animate-fade-in-up`}
-                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div
                   className={`flex items-start gap-3 max-w-[85%] md:max-w-[75%] ${
@@ -136,14 +166,17 @@ export function ChatBox({ className }: ChatBoxProps) {
                   }`}
                 >
                   {/* Avatar with gradient and glow */}
-                  <div className={`
-                    flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden
-                    shadow-lg transition-all duration-300 hover:scale-110
-                    ${message.sender === 'user' 
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-500/30' 
-                      : 'bg-gradient-to-br from-gray-700 to-gray-800 shadow-gray-700/30'
-                    }
-                  `}>
+                  <div
+                    className={`
+                      flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden
+                      shadow-lg transition-all duration-300 hover:scale-110
+                      ${
+                        message.sender === 'user'
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-500/30'
+                          : 'bg-gradient-to-br from-gray-700 to-gray-800 shadow-gray-700/30'
+                      }
+                    `}
+                  >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     {message.sender === 'user' ? (
                       <User className="h-5 w-5 text-white relative z-10" />
@@ -157,36 +190,42 @@ export function ChatBox({ className }: ChatBoxProps) {
                     <div
                       className={`
                         relative rounded-2xl px-5 py-3.5 break-words whitespace-pre-wrap group
-                        ${message.sender === 'user'
-                          ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30'
-                          : 'bg-gradient-to-br from-gray-800/90 to-gray-900/90 text-gray-100 border border-white/5 shadow-lg hover:border-white/10'
+                        ${
+                          message.sender === 'user'
+                            ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30'
+                            : 'bg-gradient-to-br from-gray-800/90 to-gray-900/90 text-gray-100 border border-white/5 shadow-lg hover:border-white/10'
                         }
                         transition-all duration-300 hover:scale-[1.02]
                       `}
                     >
                       {/* Shine effect on hover */}
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 rounded-2xl"></div>
-                      
+
                       {/* Message Content */}
                       <p className="text-[15px] leading-relaxed relative z-10 font-medium tracking-wide">
                         {message.content}
                       </p>
                     </div>
-                    
+
                     {/* Timestamp */}
-                    <p className={`text-[11px] font-medium tracking-wide px-2 ${
-                      message.sender === 'user' ? 'text-right text-gray-400' : 'text-left text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                    <p
+                      className={`text-[11px] font-medium tracking-wide px-2 ${
+                        message.sender === 'user'
+                          ? 'text-right text-gray-400'
+                          : 'text-left text-gray-500'
+                      }`}
+                    >
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
                       })}
                     </p>
                   </div>
                 </div>
               </div>
-            ))}
-          
+            ))
+          )}
+
           {isTyping && (
             <div className="flex justify-start animate-fade-in-up">
               <div className="flex items-start gap-3 max-w-[85%] md:max-w-[75%]">

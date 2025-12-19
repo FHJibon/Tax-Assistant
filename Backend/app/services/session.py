@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from app.model.model import ChatSession, ChatMessage
+from sqlalchemy import select, update, delete
+from app.model.model import ChatSession, ChatMessage, UploadedDocument
 
 async def get_or_create_active_session(db: AsyncSession, user_id: int) -> ChatSession:
     result = await db.execute(
@@ -17,18 +17,16 @@ async def get_or_create_active_session(db: AsyncSession, user_id: int) -> ChatSe
     return new_session
 
 async def terminate_active_session(db: AsyncSession, user_id: int) -> str:
-    # Find current active session
+    # Find current active session and hard-delete it with children
     result = await db.execute(
         select(ChatSession).where(ChatSession.user_id == user_id, ChatSession.active == True)
     )
     current = result.scalars().first()
     if current:
-        # Mark inactive; cascades will delete children when session row is deleted if configured
-        await db.execute(
-            update(ChatSession)
-            .where(ChatSession.id == current.id)
-            .values(active=False)
-        )
+        # Explicitly delete children to be safe across DBs (SQLite pragma, etc.)
+        await db.execute(delete(ChatMessage).where(ChatMessage.session_id == current.id))
+        await db.execute(delete(UploadedDocument).where(UploadedDocument.session_id == current.id))
+        await db.execute(delete(ChatSession).where(ChatSession.id == current.id))
         await db.commit()
     # Create a fresh session
     fresh = ChatSession(user_id=user_id, active=True)
@@ -36,6 +34,20 @@ async def terminate_active_session(db: AsyncSession, user_id: int) -> str:
     await db.commit()
     await db.refresh(fresh)
     return fresh.id
+
+async def delete_active_session(db: AsyncSession, user_id: int) -> bool:
+    """Hard delete the current active session and all related data."""
+    result = await db.execute(
+        select(ChatSession).where(ChatSession.user_id == user_id, ChatSession.active == True)
+    )
+    current = result.scalars().first()
+    if not current:
+        return False
+    await db.execute(delete(ChatMessage).where(ChatMessage.session_id == current.id))
+    await db.execute(delete(UploadedDocument).where(UploadedDocument.session_id == current.id))
+    await db.execute(delete(ChatSession).where(ChatSession.id == current.id))
+    await db.commit()
+    return True
 
 async def persist_message(db: AsyncSession, session_id: str, role: str, content: str) -> int:
     msg = ChatMessage(session_id=session_id, role=role, content=content)

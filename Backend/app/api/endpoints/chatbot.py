@@ -8,6 +8,7 @@ from app.utils.security import decode_access_token
 from app.services.session import (
     get_or_create_active_session,
     terminate_active_session,
+    delete_active_session,
     persist_message,
     fetch_history,
 )
@@ -36,7 +37,11 @@ async def assistant(
     # Persist user message
     await persist_message(db, session.id, "user", request.message)
 
-    answer, sources = await rag_answer(request.message, request.top_k)
+    # Load full chat history for this user/session so the model
+    # can answer based on everything said before (ChatGPT-style).
+    history_items = await fetch_history(db, user_id)
+
+    answer, sources = await rag_answer(request.message, request.top_k, chat_history=history_items)
 
     # Persist assistant message
     await persist_message(db, session.id, "assistant", answer)
@@ -57,3 +62,19 @@ async def history(
 
     items = await fetch_history(db, user_id)
     return ChatHistoryResponse(messages=items)
+
+@router.post("/terminate")
+async def terminate_session(
+    authorization: Optional[str] | None = Header(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = authorization.replace("Bearer ", "").strip()
+    payload = decode_access_token(token)
+    user_id = int(payload.get("sub"))
+
+    deleted = await delete_active_session(db, user_id)
+    # Optionally create a new session immediately for UX continuity
+    new_session = await get_or_create_active_session(db, user_id)
+    return {"terminated": deleted, "new_session_id": new_session.id}

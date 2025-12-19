@@ -8,7 +8,7 @@ from app.api.endpoints.chatbot import router as chat_router
 from app.api.endpoints.upload import router as upload_router
 from app.services.user import router as user_router
 
-app = FastAPI(title="Tax Assistant")
+app = FastAPI(title="AI Tax & Law Assistant")
 
 @app.on_event("startup")
 async def on_startup():
@@ -16,7 +16,6 @@ async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-# Enable CORS for frontend (localhost:3000 by default)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -35,7 +34,7 @@ app.include_router(user_router)
 
 @app.get("/")
 async def root():
-    return {"message": "Running!"}
+    return {"message": "AI Tax & Law Assistant is Running!"}
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):

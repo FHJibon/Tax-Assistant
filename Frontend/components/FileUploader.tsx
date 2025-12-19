@@ -31,7 +31,7 @@ interface FileUploaderProps {
 export function FileUploader({ 
   onFilesUpload, 
   acceptedTypes = ['.pdf', '.jpg', '.jpeg', '.png', 'application/pdf', 'image/jpeg', 'image/png'],
-  maxFiles = 5,
+  maxFiles = 10,
   maxSize = 5,
   hideInfo = false,
   showSizeNote = true,

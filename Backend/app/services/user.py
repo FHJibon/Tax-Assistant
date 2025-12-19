@@ -70,6 +70,20 @@ async def update_profile(
             raise HTTPException(status_code=400, detail="Invalid TIN format: must be 12 digits")
         user.tin = tin
 
+    if payload.date_of_birth is not None:
+        dob_str = str(payload.date_of_birth).strip()
+        if dob_str:
+            try:
+                # Expecting ISO format YYYY-MM-DD
+                from datetime import date
+                year, month, day = map(int, dob_str.split("-"))
+                dob = date(year, month, day)
+            except Exception:
+                raise HTTPException(status_code=400, detail="Invalid date_of_birth format. Use YYYY-MM-DD")
+            user.date_of_birth = dob
+        else:
+            user.date_of_birth = None
+
     db.add(user)
     await db.commit()
     await db.refresh(user)

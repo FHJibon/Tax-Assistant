@@ -80,31 +80,49 @@ export default function ProfilePage() {
     }
 
     // Prefer saved profile; otherwise hydrate from auth user
+    // Always prefer server truth; fall back to local only if fetch unavailable
     const savedProfile = localStorage.getItem('userProfile')
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile))
-    } else if (user) {
+    if (user) {
       setProfile(prev => ({
         ...prev,
         name: user.name || prev.name,
         email: user.email || prev.email,
       }))
-      // Fetch latest profile from backend if available
-      authAPI.me()
-        .then(res => {
-          const u = res.data
-          setProfile(prev => ({
-            ...prev,
-            name: u?.name ?? prev.name,
-            email: u?.email ?? prev.email,
-            nid: u?.nid ?? prev.nid,
-            tin: u?.tin ?? prev.tin,
-          }))
-        })
-        .catch(() => {
-          // Silently ignore if not available; keep local values
-        })
     }
+    authAPI.me()
+      .then(res => {
+        const u = res.data
+        setProfile(prev => ({
+          ...prev,
+          name: u?.name ?? prev.name,
+          email: u?.email ?? prev.email,
+          nid: u?.nid ?? prev.nid,
+          tin: u?.tin ?? prev.tin,
+          dateOfBirth: u?.date_of_birth ?? prev.dateOfBirth,
+        }))
+        // sync cache with server
+        const local = {
+          ...JSON.parse(savedProfile || '{}'),
+          name: u?.name || '',
+          email: u?.email || '',
+          nid: u?.nid || '',
+          tin: u?.tin || '',
+          dateOfBirth: u?.date_of_birth || '',
+        }
+        localStorage.setItem('userProfile', JSON.stringify(local))
+      })
+      .catch((err: any) => {
+        const status = err?.response?.status
+        if (status === 401 || status === 404) {
+          // Clear stale cache and bounce to login
+          localStorage.removeItem('userProfile')
+          localStorage.removeItem('userEmail')
+          localStorage.removeItem('userName')
+          if (typeof window !== 'undefined') window.location.href = '/login'
+        } else if (savedProfile) {
+          setProfile(JSON.parse(savedProfile))
+        }
+      })
   }, [user, searchParams])
 
   React.useEffect(() => {
@@ -135,6 +153,7 @@ export default function ProfilePage() {
         name: profile.name,
         nid: profile.nid,
         tin: profile.tin,
+        date_of_birth: profile.dateOfBirth || undefined,
       })
       const updated = res.data
       // Persist minimal profile locally for client gating flows
@@ -144,6 +163,7 @@ export default function ProfilePage() {
         email: updated?.email ?? profile.email,
         nid: updated?.nid ?? profile.nid,
         tin: updated?.tin ?? profile.tin,
+        dateOfBirth: updated?.date_of_birth ?? profile.dateOfBirth,
       }
       localStorage.setItem('userProfile', JSON.stringify(local))
       setProfile(local)

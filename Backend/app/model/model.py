@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, LargeBinary, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, LargeBinary, DateTime, Date
 from sqlalchemy.sql import func
 import uuid
 
@@ -15,6 +15,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     nid = Column(String, nullable=True)
     tin = Column(String, nullable=True)
+    date_of_birth = Column(Date, nullable=True)
 
 
 class ChatSession(Base):

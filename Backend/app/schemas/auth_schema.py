@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from pydantic import ConfigDict
+from datetime import date
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=50)
@@ -13,6 +14,7 @@ class UserRead(BaseModel):
     is_active: bool
     nid: str | None = None
     tin: str | None = None
+    date_of_birth: date | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,3 +54,4 @@ class ProfileUpdateRequest(BaseModel):
     name: str | None = None
     nid: str | None = None
     tin: str | None = None
+    date_of_birth: str | None = None

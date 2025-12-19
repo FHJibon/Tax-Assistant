@@ -37,6 +37,10 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         const token = localStorage.getItem('token')
         if (token) {
+          // Clear all cached user info to avoid stale UI
+          localStorage.removeItem('userProfile')
+          localStorage.removeItem('userEmail')
+          localStorage.removeItem('userName')
           localStorage.removeItem('token')
           if (window.location.pathname !== '/login') {
             window.location.href = '/login'
@@ -82,6 +86,8 @@ export const taxAPI = {
   // Increase timeout for chat since LLM responses can take longer than 10s
   sendChatMessage: (message: string, topK: number = 5, timeoutMs: number = 30000) =>
     api.post('/chat/', { message, top_k: topK }, { timeout: timeoutMs }),
+  getHistory: () => api.get('/chat/history'),
+  terminateSession: () => api.post('/chat/terminate'),
 }
 
 export const userAPI = {
