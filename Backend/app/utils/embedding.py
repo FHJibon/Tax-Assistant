@@ -1,11 +1,19 @@
-from openai import OpenAI
-from app.core.config import OPENAI_API_KEY, MODEL_NAME
+from __future__ import annotations
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+from openai import AsyncOpenAI
 
-def get_embedding(text: str):
-    emb = client.embeddings.create(
-        model=MODEL_NAME,
-        input=text
-    )
+from app.core.config import MODEL_NAME, OPENAI_API_KEY
+
+_client: AsyncOpenAI | None = None
+
+
+def _get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    return _client
+
+
+async def embed(text: str) -> list[float]:
+    emb = await _get_client().embeddings.create(model=MODEL_NAME, input=text)
     return emb.data[0].embedding

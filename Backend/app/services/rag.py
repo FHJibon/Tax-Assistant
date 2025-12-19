@@ -1,9 +1,8 @@
-import asyncio
 from typing import List, Tuple, Optional, Dict
 from openai import AsyncOpenAI
 from app.core.config import OPENAI_API_KEY, GPT_MODEL
-from ..utils.embedding import get_embedding
-from .pinecone import search_index
+from app.utils.embedding import embed
+from .pinecone import search
 
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
@@ -13,9 +12,9 @@ def _detect_language(text: str) -> str:
             return 'bn'
     return 'en'
 
-async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, chat_history: Optional[List[Dict]] = None) -> Tuple[str, List[dict]]:
-    query_emb = await asyncio.to_thread(get_embedding, query)
-    raw_results = await asyncio.to_thread(search_index, query_emb, top_k)
+async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.5, chat_history: Optional[List[Dict]] = None) -> Tuple[str, List[dict]]:
+    query_emb = await embed(query)
+    raw_results = await search(query_emb, top_k)
     valid_results = [r for r in raw_results if r.score >= score_threshold]
     context_blocks = []
     sources = []
@@ -34,18 +33,18 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, c
 
         numbered_context = "\n\n".join(context_blocks)
         instructions = (
-            "Use the numbered context as your primary source.\n"
-            "Small, focused questions: reply in 1–2 short sentences, no bullets.\n"
+            "Use the numbered context as your primary source & use Income Tax Act 2023 as a secondary reference if needed.\n"
+            "Small or focused questions: reply in 1–2 short sentences.\n"
             "Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
             "Do not introduce yourself or add long disclaimers."
         )
     else:
         numbered_context = "(No relevant legal documents found in database)"
         instructions = (
-            "Rely on your knowledge of Bangladesh NBR law.\n"
-            "Small, focused questions: reply in 1–2 short sentences, no bullets.\n"
+            "Rely on fully knowledge of Bangladesh NBR laws and Income Tax Act 2023.\n"
+            "Small or focused questions: reply in 1–2 short sentences.\n"
             "Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
-            "Do not introduce yourself"
+            "Do not introduce yourself or add long disclaimers"
         )
 
     lang = _detect_language(query)
@@ -56,8 +55,8 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, c
     )
 
     system_prompt = (
-        "You are a Senior Bangladesh tax Advisor AI, expert in the Income Tax Act and current NBR rules. "
-        "Always provide clear, concise, and practical answers—friendly."
+        "You are a Senior Bangladeshi tax Advisor, expert in the Income Tax Act 2023 and current NBR rules & Regulations. "
+        "Always provide clear, concise, and practical answers in friendly manner."
         + target_lang_instruction + " If any context or user input is in another language, translate it and always answer only in the target language.\n"
     )
 
@@ -87,3 +86,7 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, c
 
     answer = res.choices[0].message.content
     return answer, sources
+
+
+async def answer(query: str, top_k: int = 5, score_threshold: float = 0.5, chat_history: Optional[List[Dict]] = None) -> Tuple[str, List[dict]]:
+    return await rag_answer(query, top_k=top_k, score_threshold=score_threshold, chat_history=chat_history)

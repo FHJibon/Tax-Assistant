@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useI18n } from '@/lib/i18n-provider'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-provider'
@@ -24,9 +25,6 @@ import {
 export default function HomePage() {
   const { t, language } = useI18n()
   const { isAuthenticated, initialized } = useAuth()
-
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => { setMounted(true) }, [])
 
   const features = [
     {
@@ -78,7 +76,7 @@ export default function HomePage() {
           <div className="text-center">
             <div className="animate-fade-in-up">
               <div className="flex justify-center mb-6 animate-scale-in">
-                <img src="/logo.svg" alt="Logo" className="h-16 w-16 rounded-xl shadow-lg hover:scale-110 transition-transform duration-300" />
+                <Image src="/logo.svg" alt="Logo" width={64} height={64} className="h-16 w-16 rounded-xl shadow-lg hover:scale-110 transition-transform duration-300" />
               </div>
               
               <h1 className={`text-4xl md:text-6xl font-black mb-6 animate-fade-in-up animation-delay-200 ${
@@ -164,9 +162,9 @@ export default function HomePage() {
                   key={index}
                   style={{
                     transition: 'transform 0.5s cubic-bezier(.22,1,.36,1), opacity 0.5s cubic-bezier(.22,1,.36,1)',
-                    transitionDelay: mounted ? `${index * 120}ms` : '0ms',
-                    transform: mounted ? 'scale(1)' : 'scale(0.7)',
-                    opacity: mounted ? 1 : 0
+                    transitionDelay: `${index * 120}ms`,
+                    transform: 'scale(1)',
+                    opacity: 1,
                   }}
                 >
                   <Card className="h-full shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl hover:border-white/10 transition-all duration-700 group relative overflow-hidden hover:-translate-y-1.5">

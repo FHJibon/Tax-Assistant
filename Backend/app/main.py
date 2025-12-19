@@ -6,7 +6,7 @@ from app.model.model import Base
 from app.api.endpoints.auth import router as auth_router
 from app.api.endpoints.chatbot import router as chat_router
 from app.api.endpoints.upload import router as upload_router
-from app.services.user import router as user_router
+from app.api.endpoints.user import router as user_router
 
 app = FastAPI(title="AI Tax & Law Assistant")
 

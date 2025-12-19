@@ -9,7 +9,6 @@ from app.schemas.auth_schema import UserRead, ProfileUpdateRequest
 
 router = APIRouter(prefix="/user", tags=["User"])
 
-
 @router.get("/profile", response_model=UserRead)
 async def get_profile(
     authorization: Optional[str] | None = Header(default=None),
@@ -27,10 +26,6 @@ async def get_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-
-# Schema moved to app.schemas.auth_schema.ProfileUpdateRequest
-
 
 @router.put("/profile", response_model=UserRead)
 async def update_profile(
@@ -51,7 +46,6 @@ async def update_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Only update allowed fields with basic validation
     if payload.name is not None:
         name = str(payload.name).strip()
         if not name:
@@ -60,8 +54,8 @@ async def update_profile(
 
     if payload.nid is not None:
         nid = str(payload.nid).strip()
-        if nid and not (nid.isdigit() and (len(nid) == 13 or len(nid) == 17)):
-            raise HTTPException(status_code=400, detail="Invalid NID format: must be 13 or 17 digits")
+        if nid and not (nid.isdigit() and (len(nid) in (10, 13, 17))):
+            raise HTTPException(status_code=400, detail="Invalid NID format: must be 10, 13 or 17 digits")
         user.nid = nid
 
     if payload.tin is not None:
@@ -74,7 +68,6 @@ async def update_profile(
         dob_str = str(payload.date_of_birth).strip()
         if dob_str:
             try:
-                # Expecting ISO format YYYY-MM-DD
                 from datetime import date
                 year, month, day = map(int, dob_str.split("-"))
                 dob = date(year, month, day)
@@ -83,6 +76,25 @@ async def update_profile(
             user.date_of_birth = dob
         else:
             user.date_of_birth = None
+
+    # Optional phone: allow empty (stored as None), otherwise must be 11 digits
+    if payload.phone is not None:
+        phone = str(payload.phone).strip()
+        if phone:
+            if not (phone.isdigit() and len(phone) == 11):
+                raise HTTPException(status_code=400, detail="Invalid phone format: must be exactly 11 digits")
+            user.phone = phone
+        else:
+            user.phone = None
+
+    # Optional address and occupation: simple trimmed strings, allow clearing
+    if payload.address is not None:
+        address = str(payload.address).strip()
+        user.address = address or None
+
+    if payload.occupation is not None:
+        occupation = str(payload.occupation).strip()
+        user.occupation = occupation or None
 
     db.add(user)
     await db.commit()

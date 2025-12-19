@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from app.schemas.chat_schema import ChatRequest, QueryResponse, ChatHistoryResponse
-from app.services.rag import rag_answer
+from app.services.rag import answer as rag
 from app.utils.db import get_db
 from app.utils.security import decode_access_token
 from app.services.session import (
@@ -27,23 +27,14 @@ async def assistant(
     payload = decode_access_token(token)
     user_id = int(payload.get("sub"))
 
-    # Check for termination keyword
     if request.message.strip().lower() == "terminate my session":
         new_session_id = await terminate_active_session(db, user_id)
         return QueryResponse(answer="Session terminated. Starting a new session.", session_id=new_session_id, terminated=True)
 
     session = await get_or_create_active_session(db, user_id)
-
-    # Persist user message
     await persist_message(db, session.id, "user", request.message)
-
-    # Load full chat history for this user/session so the model
-    # can answer based on everything said before (ChatGPT-style).
     history_items = await fetch_history(db, user_id)
-
-    answer, sources = await rag_answer(request.message, request.top_k, chat_history=history_items)
-
-    # Persist assistant message
+    answer, sources = await rag(request.message, request.top_k, chat_history=history_items)
     await persist_message(db, session.id, "assistant", answer)
 
     return QueryResponse(answer=answer, session_id=session.id)
@@ -75,6 +66,5 @@ async def terminate_session(
     user_id = int(payload.get("sub"))
 
     deleted = await delete_active_session(db, user_id)
-    # Optionally create a new session immediately for UX continuity
     new_session = await get_or_create_active_session(db, user_id)
     return {"terminated": deleted, "new_session_id": new_session.id}

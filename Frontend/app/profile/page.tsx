@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { authAPI, userAPI } from '@/lib/api'
 import { useAuth } from '@/lib/auth-provider'
@@ -28,7 +28,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 
-export default function ProfilePage() {
+function ProfilePageInner() {
   const { t, language, setLanguage } = useI18n()
   const { user } = useAuth()
   const searchParams = useSearchParams()
@@ -76,6 +76,16 @@ export default function ProfilePage() {
     return /^[0-9]{12}$/.test(s)
   }, [profile.tin])
 
+  // Phone: allow empty, otherwise must be exactly 11 digits
+  const phoneValid = React.useMemo(() => {
+    const s = (profile.phone || '').trim()
+    if (!s) return true
+    return /^[0-9]{11}$/.test(s)
+  }, [profile.phone])
+
+  // Track if phone input was blurred at least once
+  const [phoneTouched, setPhoneTouched] = React.useState(false)
+
   React.useEffect(() => {
     // Auto-open edit mode when requested via query param
     const editParam = searchParams?.get('edit')
@@ -83,9 +93,20 @@ export default function ProfilePage() {
       setIsEditing(true)
     }
 
-    // Prefer saved profile; otherwise hydrate from auth user
-    // Always prefer server truth; fall back to local only if fetch unavailable
+    // Hydrate from any cached profile first so fields like phone/address
+    // persist between visits even before the backend profile loads.
     const savedProfile = localStorage.getItem('userProfile')
+    if (savedProfile) {
+      try {
+        const parsed = JSON.parse(savedProfile)
+        setProfile(prev => ({ ...prev, ...parsed }))
+      } catch {
+        // ignore invalid cache
+      }
+    }
+
+    // Then hydrate from auth user and backend profile (source of truth
+    // for name/email/NID/TIN/DOB and now phone/address/occupation too).
     if (user) {
       setProfile(prev => ({
         ...prev,
@@ -93,7 +114,7 @@ export default function ProfilePage() {
         email: user.email || prev.email,
       }))
     }
-    authAPI.me()
+    userAPI.getProfile()
       .then(res => {
         const u = res.data
         setProfile(prev => ({
@@ -103,15 +124,23 @@ export default function ProfilePage() {
           nid: u?.nid ?? prev.nid,
           tin: u?.tin ?? prev.tin,
           dateOfBirth: u?.date_of_birth ?? prev.dateOfBirth,
+          phone: u?.phone ?? prev.phone,
+          address: u?.address ?? prev.address,
+          occupation: u?.occupation ?? prev.occupation,
         }))
-        // sync cache with server
+        // sync cache with server so all profile fields (including
+        // phone/address/occupation) persist locally
+        const cached = savedProfile ? (() => { try { return JSON.parse(savedProfile) } catch { return {} } })() : {}
         const local = {
-          ...JSON.parse(savedProfile || '{}'),
+          ...cached,
           name: u?.name || '',
           email: u?.email || '',
           nid: u?.nid || '',
           tin: u?.tin || '',
           dateOfBirth: u?.date_of_birth || '',
+          phone: u?.phone || '',
+          address: u?.address || '',
+          occupation: u?.occupation || '',
         }
         localStorage.setItem('userProfile', JSON.stringify(local))
       })
@@ -149,17 +178,22 @@ export default function ProfilePage() {
   }, [isEditing])
   
   const handleSaveProfile = async () => {
-    if (!nidValid || !tinValid) return
+    if (!nidValid || !tinValid || !phoneValid) return
     setSaveMsg('')
     setSaveBusy(true)
     try {
-      const res = await userAPI.updateProfile({
+      await userAPI.updateProfile({
         name: profile.name,
         nid: profile.nid,
         tin: profile.tin,
         date_of_birth: profile.dateOfBirth || undefined,
+        phone: profile.phone || undefined,
+        address: profile.address || undefined,
+        occupation: profile.occupation || undefined,
       })
-      const updated = res.data
+      // Re-fetch from backend so UI reflects persisted server truth
+      const refreshed = await userAPI.getProfile()
+      const updated = refreshed.data
       // Persist minimal profile locally for client gating flows
       const local = {
         ...profile,
@@ -168,6 +202,9 @@ export default function ProfilePage() {
         nid: updated?.nid ?? profile.nid,
         tin: updated?.tin ?? profile.tin,
         dateOfBirth: updated?.date_of_birth ?? profile.dateOfBirth,
+        phone: updated?.phone ?? profile.phone,
+        address: updated?.address ?? profile.address,
+        occupation: updated?.occupation ?? profile.occupation,
       }
       localStorage.setItem('userProfile', JSON.stringify(local))
       setProfile(local)
@@ -328,11 +365,21 @@ export default function ProfilePage() {
                       <Input
                         type="tel"
                         value={profile.phone}
-                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '')
+                          setProfile({ ...profile, phone: digitsOnly })
+                          if (phoneTouched) setPhoneTouched(false)
+                        }}
+                        onBlur={() => setPhoneTouched(true)}
                         disabled={!isEditing}
                         className="pl-10"
                       />
                     </div>
+                    {isEditing && phoneTouched && profile.phone && !phoneValid && (
+                      <div className="text-xs text-red-400">
+                        {language === 'bn' ? 'ফোন নম্বর ১১ সংখ্যার হতে হবে' : 'Phone number must be exactly 11 digits'}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -400,7 +447,8 @@ export default function ProfilePage() {
                       type="text"
                       value={profile.nid}
                       onChange={(e) => {
-                        setProfile({...profile, nid: e.target.value})
+                        const digitsOnly = e.target.value.replace(/\D/g, '')
+                        setProfile({ ...profile, nid: digitsOnly })
                         if (nidTouched) setNidTouched(false)
                       }}
                       onBlur={() => setNidTouched(true)}
@@ -425,7 +473,10 @@ export default function ProfilePage() {
                     <Input
                       type="text"
                       value={profile.tin}
-                      onChange={(e) => setProfile({...profile, tin: e.target.value})}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '')
+                        setProfile({ ...profile, tin: digitsOnly })
+                      }}
                       disabled={!isEditing}
                       placeholder="Enter your TIN"
                     />
@@ -649,5 +700,13 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfilePageInner />
+    </Suspense>
   )
 }

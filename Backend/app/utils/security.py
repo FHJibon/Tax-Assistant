@@ -1,31 +1,41 @@
-from datetime import datetime, timedelta
-from jose import jwt, JWTError
-from passlib.context import CryptContext
-import hashlib
-from app.core.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SENDER_EMAIL, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
-import os
+from __future__ import annotations
+import asyncio
 import random
 import smtplib
-from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from app.core.config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
+    SECRET_KEY,
+    SENDER_EMAIL,
+    SMTP_PASSWORD,
+    SMTP_PORT,
+    SMTP_SERVER,
+    SMTP_USERNAME,
+)
 
 pwd_context = CryptContext(
     schemes=["argon2"],
     deprecated="auto"
 )
 
-def get_password_hash(password: str):
-    raw = password.encode("utf-8")
-    return pwd_context.hash(password)
-
-def generate_verification_code():
+def otp_code() -> str:
     return str(random.randint(100000, 999999))
 
-def send_verification_email(recipient_email: str, code: str, subject: str = "Your Verification Code"):
+async def hash_pw(password: str) -> str:
+    return await asyncio.to_thread(pwd_context.hash, password)
+
+async def check_pw(plain: str, hashed: str) -> bool:
+    return await asyncio.to_thread(pwd_context.verify, plain, hashed)
+
+
+def _send_mail_sync(*, recipient_email: str, subject: str, body: str) -> None:
     if not all([SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SENDER_EMAIL]):
         raise ValueError("SMTP credentials are not fully set in environment variables.")
-
-    body = f"Hey,\n\nYour verification code is: {code}\n\nThis code is only valid for 5 minutes.\n\nRegards,\nFerous Hasan"
 
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
@@ -41,16 +51,21 @@ def send_verification_email(recipient_email: str, code: str, subject: str = "You
     except Exception as e:
         raise RuntimeError(f"Failed to send email: {e}")
 
-def send_otp(recipient_email: str, purpose: str = "login") -> str:
-    # Always generate a random verification code
-    code = generate_verification_code()
+async def send_mail(recipient_email: str, subject: str, body: str) -> None:
+    await asyncio.to_thread(_send_mail_sync, recipient_email=recipient_email, subject=subject, body=body)
+
+
+async def send_otp(recipient_email: str, purpose: str = "login") -> str:
+    code = otp_code()
     subject = f"Your {purpose.capitalize()} Code"
-    send_verification_email(recipient_email, code, subject)
+    body = (
+        "Hey,\n\n"
+        f"Your verification code is: {code}\n\n"
+        "This code is only valid for 5 minutes.\n\n"
+        "Regards,\nFerous Hasan"
+    )
+    await send_mail(recipient_email, subject, body)
     return code
-    
-def verify_password(plain: str, hashed: str):
-    raw = plain.encode("utf-8")
-    return pwd_context.verify(plain, hashed)
 
 def create_access_token(data: dict):
     to_encode = data.copy()

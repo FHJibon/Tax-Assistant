@@ -16,6 +16,9 @@ class User(Base):
     nid = Column(String, nullable=True)
     tin = Column(String, nullable=True)
     date_of_birth = Column(Date, nullable=True)
+    phone = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    occupation = Column(String, nullable=True)
 
 
 class ChatSession(Base):

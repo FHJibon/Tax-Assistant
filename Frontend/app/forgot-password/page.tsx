@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n-provider'
 import { Button } from '@/components/ui/button'
@@ -51,7 +52,7 @@ export default function ForgotPasswordPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/">
-            <img src="/logo.svg" alt="Logo" className="h-16 w-16 rounded-xl shadow-lg hover:shadow-xl transition-shadow" />
+            <Image src="/logo.svg" alt="Logo" width={64} height={64} className="h-16 w-16 rounded-xl shadow-lg hover:shadow-xl transition-shadow" />
           </Link>
         </div>
 

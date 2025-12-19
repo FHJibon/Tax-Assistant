@@ -1,9 +1,8 @@
+import asyncio
+import uuid
 from pinecone import Pinecone, ServerlessSpec
 from app.core.config import PINECONE_API_KEY, PINECONE_INDEX
-import uuid
-
 pc = Pinecone(api_key=PINECONE_API_KEY)
-
 def get_or_create_index():
     indexes = [i["name"] for i in pc.list_indexes()]
 
@@ -28,7 +27,6 @@ def upsert_document(text: str, embedding: list, metadata: dict = None):
             "metadata": metadata or {"text": text}
         }]
     )
-
     return doc_id
 
 def search_index(embedding: list, top_k: int = 10):
@@ -38,3 +36,9 @@ def search_index(embedding: list, top_k: int = 10):
         include_metadata=True
     )
     return res.matches
+
+async def upsert(text: str, embedding: list, metadata: dict | None = None) -> str:
+    return await asyncio.to_thread(upsert_document, text, embedding, metadata)
+
+async def search(embedding: list, top_k: int = 10):
+    return await asyncio.to_thread(search_index, embedding, top_k)

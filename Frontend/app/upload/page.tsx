@@ -3,6 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n-provider'
+import { userAPI } from '@/lib/api'
 import { Navbar } from '@/components/Navbar'
 import { FileUploader } from '@/components/FileUploader'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,31 +23,55 @@ export default function UploadPage() {
   const [profileComplete, setProfileComplete] = React.useState(false)
   const [missingFields, setMissingFields] = React.useState<string[]>([])
 
-  const checkProfileCompletion = React.useCallback(() => {
-    // Check if profile is complete
-    const savedProfile = localStorage.getItem('userProfile')
-    if (!savedProfile) {
+  const checkProfileCompletion = React.useCallback(async () => {
+    // Always treat the backend profile as the source of truth so that
+    // once the user has completed their profile, they don't need to
+    // re-enter it just because local storage was cleared or is stale.
+    try {
+      const res = await userAPI.getProfile()
+      const u = res.data
+
+      if (!u) {
+        setProfileComplete(false)
+        setMissingFields(['All profile information'])
+        return
+      }
+
+      const profileFromServer = {
+        name: u.name || '',
+        email: u.email || '',
+        nid: u.nid || '',
+        tin: u.tin || '',
+        dateOfBirth: u.date_of_birth || '',
+        phone: u.phone || '',
+        address: u.address || '',
+        occupation: u.occupation || '',
+      }
+
+      // Keep a local cache for other pages, but always based on server.
+      localStorage.setItem('userProfile', JSON.stringify(profileFromServer))
+
+      const profile = profileFromServer
+      const missing: string[] = []
+
+      if (!profile.nid || profile.nid.trim() === '') {
+        missing.push('NID Number')
+      }
+      if (!profile.tin || profile.tin.trim() === '') {
+        missing.push('TIN Number')
+      }
+
+      if (missing.length > 0) {
+        setProfileComplete(false)
+        setMissingFields(missing)
+      } else {
+        setProfileComplete(true)
+        setMissingFields([])
+      }
+    } catch (err) {
+      // If backend profile cannot be loaded, treat as incomplete
       setProfileComplete(false)
       setMissingFields(['All profile information'])
-      return
-    }
-
-    const profile = JSON.parse(savedProfile)
-    const missing: string[] = []
-
-    if (!profile.nid || profile.nid.trim() === '') {
-      missing.push('NID Number')
-    }
-    if (!profile.tin || profile.tin.trim() === '') {
-      missing.push('TIN Number')
-    }
-
-    if (missing.length > 0) {
-      setProfileComplete(false)
-      setMissingFields(missing)
-    } else {
-      setProfileComplete(true)
-      setMissingFields([])
     }
   }, [])
 
@@ -144,7 +169,7 @@ export default function UploadPage() {
                     </ul>
                   </div>
                   <Button
-                    onClick={() => router.push('/profile')}
+                    onClick={() => router.push('/profile?edit=1')}
                     className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
                   >
                     Complete Profile Now

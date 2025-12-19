@@ -9,10 +9,10 @@ import ConditionalFooter from '@/components/ConditionalFooter'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'AI Tax & Law Assistant | বাংলাদেশের কর ও আইন সহায়ক',
-  description: 'AI-powered tax filing and legal assistance for Bangladesh',
-  keywords: ['tax', 'legal', 'AI', 'Bangladesh', 'filing', 'কর', 'আইন'],
-  authors: [{ name: 'AI Tax Assistant Team' }],
+  title: 'Tax Assistant',
+  description: 'Tax filing and legal assistance of Bangladesh',
+  keywords: ['tax', 'law', 'filing'],
+  authors: [{ name: 'Md Ferdous Hasan' }],
   icons: {
     icon: '/logo.svg',
     apple: '/logo.svg',

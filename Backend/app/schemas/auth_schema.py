@@ -15,6 +15,9 @@ class UserRead(BaseModel):
     nid: str | None = None
     tin: str | None = None
     date_of_birth: date | None = None
+    phone: str | None = None
+    address: str | None = None
+    occupation: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,8 +53,10 @@ class DeleteAccountRequest(BaseModel):
     confirm: bool = True
 
 class ProfileUpdateRequest(BaseModel):
-    # Optional fields for partial profile updates
     name: str | None = None
     nid: str | None = None
     tin: str | None = None
     date_of_birth: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    occupation: str | None = None

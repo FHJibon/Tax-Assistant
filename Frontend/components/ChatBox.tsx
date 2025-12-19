@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Send, User, Sparkles } from 'lucide-react'
 import { taxAPI } from '@/lib/api'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Message {
   id: string
@@ -18,9 +20,12 @@ interface Message {
 
 interface ChatBoxProps {
   className?: string
+  externalLoading?: boolean
+  externalLoadingText?: string
+  reloadTrigger?: number
 }
 
-export function ChatBox({ className }: ChatBoxProps) {
+export function ChatBox({ className, externalLoading, externalLoadingText, reloadTrigger }: ChatBoxProps) {
   const { t } = useI18n()
   const { user } = useAuth()
   const [messages, setMessages] = React.useState<Message[]>([])
@@ -53,9 +58,11 @@ export function ChatBox({ className }: ChatBoxProps) {
     }
   }
 
-  // Load history on mount; if empty, keep chat blank (we show a centered greeting instead)
+  // Load history on mount and when language changes; avoid tying this
+  // to `isTyping` so we don't overwrite in-flight user messages.
   React.useEffect(() => {
     let cancelled = false
+
     const load = async () => {
       try {
         const { data } = await taxAPI.getHistory()
@@ -66,7 +73,7 @@ export function ChatBox({ className }: ChatBoxProps) {
             id: String(m.id ?? idx + 1),
             content: String(m.content ?? ''),
             sender: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-            timestamp: new Date(m.created_at || Date.now())
+            timestamp: new Date(m.created_at || Date.now()),
           }))
           setMessages(mapped)
         }
@@ -74,9 +81,34 @@ export function ChatBox({ className }: ChatBoxProps) {
         // If history fails, leave messages empty and still allow new chat
       }
     }
+
     load()
-    return () => { cancelled = true }
-  }, [t])
+
+    const handleFocus = () => {
+      if (!cancelled) load()
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') handleFocus()
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [t, reloadTrigger])
+
+  // When an external loading spinner is shown, ensure we scroll to bottom
+  // so the summarizing bubble appears in a consistent position.
+  React.useEffect(() => {
+    if (externalLoading) {
+      scrollToBottom('smooth')
+    }
+  }, [externalLoading])
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return
@@ -138,13 +170,12 @@ export function ChatBox({ className }: ChatBoxProps) {
         {/* Messages Area */}
         <div
           ref={messagesContainerRef}
-          className={`flex-1 p-4 md:p-6 space-y-6 min-h-0 ${
-            hasMessages ? 'overflow-y-auto scrollbar-hide' : 'overflow-y-hidden'
-          }`}
+          className={`flex-1 p-4 md:p-6 space-y-6 min-h-0 overflow-y-auto scrollbar-hide`}
         >
-          {!hasMessages && !isTyping ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center max-w-xl animate-fade-in-scale">
+          {/* Greeting only when there are no messages and no loading */}
+          {!hasMessages && !isTyping && !externalLoading && (
+            <div className="flex items-start justify-start">
+              <div className="text-left max-w-xl animate-fade-in-scale">
                 <div className="inline-flex items-center justify-center mb-4 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30">
                   <Sparkles className="h-5 w-5 text-white" />
                 </div>
@@ -156,8 +187,9 @@ export function ChatBox({ className }: ChatBoxProps) {
                 </p>
               </div>
             </div>
-          ) : (
-            messages.map((message) => (
+          )}
+          {/* Existing messages */}
+          {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${
@@ -202,9 +234,17 @@ export function ChatBox({ className }: ChatBoxProps) {
                       `}
                     >
                       {/* Message Content */}
-                      <p className="text-[15px] leading-relaxed relative z-10 font-medium tracking-wide">
-                        {message.content}
-                      </p>
+                      {message.sender === 'assistant' ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-[15px] leading-relaxed relative z-10 font-medium tracking-wide">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-[15px] leading-relaxed relative z-10 font-medium tracking-wide">
+                          {message.content}
+                        </p>
+                      )}
                     </div>
 
                     {/* Timestamp */}
@@ -223,7 +263,30 @@ export function ChatBox({ className }: ChatBoxProps) {
                   </div>
                 </div>
               </div>
-            ))
+          ))}
+
+          {/* Summarizing bubble behaves like a typing indicator: it appears
+              *after* the latest message, at the bottom of the chat. */}
+          {externalLoading && (
+            <div className="flex justify-start animate-fade-in-up mt-1">
+              <div className="flex items-start gap-3 max-w-[85%] md:max-w-[75%]">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-gray-700/30">
+                  <Sparkles className="h-5 w-5 text-blue-400 relative z-10 animate-pulse" />
+                </div>
+                <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-white/5 rounded-2xl px-5 py-3.5 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">
+                      {externalLoadingText || 'Summarizing uploaded document...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {isTyping && (

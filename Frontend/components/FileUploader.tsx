@@ -26,15 +26,19 @@ interface FileUploaderProps {
   maxSize?: number // in MB
   hideInfo?: boolean
   showSizeNote?: boolean
+  onSummarizingChange?: (active: boolean) => void
+  onUploadComplete?: () => void
 }
 
 export function FileUploader({ 
-  onFilesUpload, 
+  onFilesUpload,
   acceptedTypes = ['.pdf', '.jpg', '.jpeg', '.png', 'application/pdf', 'image/jpeg', 'image/png'],
   maxFiles = 10,
   maxSize = 5,
   hideInfo = false,
   showSizeNote = true,
+  onSummarizingChange,
+  onUploadComplete,
 }: FileUploaderProps) {
   const { t } = useI18n()
   const [files, setFiles] = React.useState<FileItem[]>([])
@@ -149,7 +153,8 @@ export function FileUploader({
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const res = await api.post('/upload', formData, {
+      onSummarizingChange?.(true)
+      const res = await api.post('/upload/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {
           const total = e.total || file.size
@@ -166,6 +171,9 @@ export function FileUploader({
       ))
       setStatusMessage(`Uploaded ${file.name}`)
       setStatusType('success')
+      // Notify parent so chat history can refresh
+      // and show the new document summary.
+      onUploadComplete?.()
     } catch (err: any) {
       // Show popup on any upload error with backend-provided detail
       const code = err?.response?.status
@@ -182,6 +190,8 @@ export function FileUploader({
       // Keep a generic inline message as well
       setStatusMessage(`Failed to upload ${file.name}`)
       setStatusType('error')
+    } finally {
+      onSummarizingChange?.(false)
     }
   }
 

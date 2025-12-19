@@ -2,8 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException
 from app.model.model import User
-from app.utils.security import get_password_hash, verify_password, send_otp
-import asyncio
+from app.utils.security import check_pw, hash_pw, send_otp
 from datetime import datetime, timedelta
 
 _pending_signup: dict[str, tuple[str, str, datetime]] = {}
@@ -21,7 +20,7 @@ async def get_user_by_email(db: AsyncSession, email: str):
 
 async def create_user(db: AsyncSession, name: str, email: str, password: str):
     try:
-        hashed_password = get_password_hash(password)
+        hashed_password = await hash_pw(password)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Password hashing error: {str(e)}")
     user = User(name=name, email=email, hashed_password=hashed_password)
@@ -34,15 +33,14 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
     user = await get_user_by_email(db, email)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not await check_pw(password, user.hashed_password):
         return False
     return user
 
     
-
 async def start_signup(name: str, email: str, password: str) -> None:
-    hashed = get_password_hash(password)
-    code = await asyncio.to_thread(send_otp, email, "signup")
+    hashed = await hash_pw(password)
+    code = await send_otp(email, "signup")
     _pending_signup[email] = (name, hashed, code, _expiry())
 
 async def verify_signup(db: AsyncSession, email: str, code: str):
@@ -67,7 +65,7 @@ async def verify_signup(db: AsyncSession, email: str, code: str):
     return new_user
 
 async def start_password_reset(email: str) -> None:
-    code = await asyncio.to_thread(send_otp, email, "password reset")
+    code = await send_otp(email, "password reset")
     _pending_password_reset[email] = (code, _expiry())
 
 async def reset_password(db: AsyncSession, email: str, code: str, new_password: str) -> bool:
@@ -86,7 +84,7 @@ async def reset_password(db: AsyncSession, email: str, code: str, new_password: 
         _pending_password_reset.pop(email, None)
         return False
 
-    user.hashed_password = get_password_hash(new_password)
+    user.hashed_password = await hash_pw(new_password)
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -98,16 +96,13 @@ async def change_password(db: AsyncSession, user_id: int, current_password: str,
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Verify current password
-    if not verify_password(current_password, user.hashed_password):
+    if not await check_pw(current_password, user.hashed_password):
         raise HTTPException(status_code=403, detail="Current password is incorrect")
 
-    # Prevent reusing the same password
     if current_password == new_password:
         raise HTTPException(status_code=400, detail="New password must be different from current password")
 
-    # Update password
-    user.hashed_password = get_password_hash(new_password)
+    user.hashed_password = await hash_pw(new_password)
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -118,13 +113,11 @@ async def delete_user_and_data(db: AsyncSession, user_id: int) -> bool:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Clear pending OTP states for this user
     if user.email in _pending_signup:
         _pending_signup.pop(user.email, None)
     if user.email in _pending_password_reset:
         _pending_password_reset.pop(user.email, None)
 
-    # Delete the user record
     await db.delete(user)
     await db.commit()
     return True

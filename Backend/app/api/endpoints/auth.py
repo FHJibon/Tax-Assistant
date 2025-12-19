@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.auth_schema import UserCreate, UserRead, Token, VerifyOTPRequest, ForgotPasswordRequest, ResetPasswordRequest, LoginRequest, ChangePasswordRequest, DeleteAccountRequest
-from app.services.user_service import authenticate_user, get_user_by_email, start_signup, verify_signup, start_password_reset, reset_password, change_password, delete_user_and_data
+from app.services.users import authenticate_user, get_user_by_email, start_signup, verify_signup, start_password_reset, reset_password, change_password, delete_user_and_data
 from app.utils.security import create_access_token, decode_access_token
 from app.utils.db import get_db
 from app.model.model import User

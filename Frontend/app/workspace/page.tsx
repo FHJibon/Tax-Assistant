@@ -16,6 +16,8 @@ export default function WorkspacePage() {
   const { isAuthenticated, initialized } = useAuth()
   const router = useRouter()
   const [uploadedFiles, setUploadedFiles] = React.useState<File[]>([])
+  const [isSummarizing, setIsSummarizing] = React.useState(false)
+  const [chatReloadToken, setChatReloadToken] = React.useState(0)
 
   React.useEffect(() => {
     if (initialized && !isAuthenticated) {
@@ -72,7 +74,14 @@ export default function WorkspacePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="relative z-10">
-                <FileUploader onFilesUpload={handleFilesUpload} maxFiles={10} hideInfo={false} showSizeNote={true} />
+                <FileUploader
+                  onFilesUpload={handleFilesUpload}
+                  maxFiles={10}
+                  hideInfo={false}
+                  showSizeNote={true}
+                  onSummarizingChange={setIsSummarizing}
+                  onUploadComplete={() => setChatReloadToken((prev) => prev + 1)}
+                />
               </CardContent>
             </Card>
 
@@ -183,7 +192,16 @@ export default function WorkspacePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden">
-                <ChatBox className="h-full" />
+                <ChatBox
+                  className="h-full"
+                  externalLoading={isSummarizing}
+                  externalLoadingText={
+                    language === 'bn'
+                      ? 'আপলোড করা ডকুমেন্টের সারাংশ তৈরি হচ্ছে...'
+                      : 'Summarizing uploaded document...'
+                  }
+                  reloadTrigger={chatReloadToken}
+                />
               </CardContent>
             </Card>
           </div>
