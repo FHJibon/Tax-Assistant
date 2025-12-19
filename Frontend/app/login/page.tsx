@@ -2,7 +2,6 @@
 
 import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n-provider'
 import { useAuth } from '@/lib/auth-provider'
@@ -69,14 +68,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-6 md:mb-8 animate-scale-in">
           <Link href="/">
-            <Image
-              src="/logo.svg"
-              alt="Logo"
-              width={64}
-              height={64}
-              className="h-14 w-14 md:h-16 md:w-16 rounded-xl shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300"
-              priority
-            />
+            <img src="/logo.svg" alt="Logo" className="h-14 w-14 md:h-16 md:w-16 rounded-xl shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300" />
           </Link>
         </div>
 

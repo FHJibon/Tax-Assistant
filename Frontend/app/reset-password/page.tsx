@@ -9,14 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Lock, ArrowLeft } from 'lucide-react'
 
 export default function ResetPasswordPage() {
-  return (
-    <React.Suspense fallback={null}>
-      <ResetPasswordPageInner />
-    </React.Suspense>
-  )
-}
-
-function ResetPasswordPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''

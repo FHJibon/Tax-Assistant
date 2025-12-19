@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     init()
-  }, [router])
+  }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {

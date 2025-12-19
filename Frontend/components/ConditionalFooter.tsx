@@ -2,7 +2,6 @@
 
 import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 export default function ConditionalFooter() {
@@ -19,13 +18,7 @@ export default function ConditionalFooter() {
           {/* Logo */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg blur-sm opacity-40"></div>
-            <Image
-              src="/logo.svg"
-              alt="Tax Assistant Logo"
-              width={32}
-              height={32}
-              className="h-8 w-8 relative z-10"
-            />
+            <img src="/logo.svg" alt="Tax Assistant Logo" className="h-8 w-8 relative z-10" />
           </div>
 
           {/* Links */}
