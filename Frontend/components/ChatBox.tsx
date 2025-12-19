@@ -29,6 +29,8 @@ export function ChatBox({ className }: ChatBoxProps) {
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null)
   const messagesContainerRef = React.useRef<HTMLDivElement | null>(null)
 
+  const hasMessages = messages.length > 0
+
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current
     if (container) {
@@ -136,9 +138,11 @@ export function ChatBox({ className }: ChatBoxProps) {
         {/* Messages Area */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 min-h-0 scrollbar-hide"
+          className={`flex-1 p-4 md:p-6 space-y-6 min-h-0 ${
+            hasMessages ? 'overflow-y-auto scrollbar-hide' : 'overflow-y-hidden'
+          }`}
         >
-          {messages.length === 0 && !isTyping ? (
+          {!hasMessages && !isTyping ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-xl animate-fade-in-scale">
                 <div className="inline-flex items-center justify-center mb-4 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30">
@@ -168,7 +172,7 @@ export function ChatBox({ className }: ChatBoxProps) {
                   {/* Avatar with gradient and glow */}
                   <div
                     className={`
-                      flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden
+                      flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
                       shadow-lg transition-all duration-300 hover:scale-110
                       ${
                         message.sender === 'user'
@@ -177,7 +181,6 @@ export function ChatBox({ className }: ChatBoxProps) {
                       }
                     `}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     {message.sender === 'user' ? (
                       <User className="h-5 w-5 text-white relative z-10" />
                     ) : (
@@ -189,7 +192,7 @@ export function ChatBox({ className }: ChatBoxProps) {
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
                     <div
                       className={`
-                        relative rounded-2xl px-5 py-3.5 break-words whitespace-pre-wrap group
+                        relative rounded-2xl px-5 py-3.5 break-words whitespace-pre-wrap
                         ${
                           message.sender === 'user'
                             ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30'
@@ -198,9 +201,6 @@ export function ChatBox({ className }: ChatBoxProps) {
                         transition-all duration-300 hover:scale-[1.02]
                       `}
                     >
-                      {/* Shine effect on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 rounded-2xl"></div>
-
                       {/* Message Content */}
                       <p className="text-[15px] leading-relaxed relative z-10 font-medium tracking-wide">
                         {message.content}
@@ -229,8 +229,7 @@ export function ChatBox({ className }: ChatBoxProps) {
           {isTyping && (
             <div className="flex justify-start animate-fade-in-up">
               <div className="flex items-start gap-3 max-w-[85%] md:max-w-[75%]">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-gray-700/30 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-gray-700/30">
                   <Sparkles className="h-5 w-5 text-blue-400 relative z-10 animate-pulse" />
                 </div>
                 <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-white/5 rounded-2xl px-5 py-3.5 shadow-lg">

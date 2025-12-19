@@ -62,10 +62,14 @@ export default function ProfilePage() {
   const [triggerWidth, setTriggerWidth] = React.useState<number | undefined>(undefined)
 
   // Derived validations for Bangladeshi IDs
+  // NID can be 10, 13, or 17 digits
   const nidValid = React.useMemo(() => {
     const s = (profile.nid || '').trim()
-    return /^[0-9]{13}$/.test(s) || /^[0-9]{17}$/.test(s)
+    return /^[0-9]{10}$/.test(s) || /^[0-9]{13}$/.test(s) || /^[0-9]{17}$/.test(s)
   }, [profile.nid])
+
+  // Track if NID input was blurred
+  const [nidTouched, setNidTouched] = React.useState(false)
 
   const tinValid = React.useMemo(() => {
     const s = (profile.tin || '').trim()
@@ -395,13 +399,19 @@ export default function ProfilePage() {
                     <Input
                       type="text"
                       value={profile.nid}
-                      onChange={(e) => setProfile({...profile, nid: e.target.value})}
+                      onChange={(e) => {
+                        setProfile({...profile, nid: e.target.value})
+                        if (nidTouched) setNidTouched(false)
+                      }}
+                      onBlur={() => setNidTouched(true)}
                       disabled={!isEditing}
                       placeholder="Enter your National ID"
                     />
-                    {isEditing && profile.nid && !nidValid && (
+                    {isEditing && nidTouched && (!profile.nid || !nidValid) && (
                       <div className="text-xs text-red-400">
-                        {language === 'bn' ? 'NID ১৩ বা ১৭ সংখ্যার হতে হবে' : 'NID must be 13 or 17 digits'}
+                        {language === 'bn'
+                          ? (!profile.nid ? 'NID ফাঁকা রাখা যাবে না' : 'NID ১০, ১৩ বা ১৭ সংখ্যার হতে হবে')
+                          : (!profile.nid ? 'NID cannot be empty' : 'NID must be 10, 13 or 17 digits')}
                       </div>
                     )}
                   </div>

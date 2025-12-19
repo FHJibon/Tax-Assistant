@@ -56,8 +56,8 @@ export default function WorkspacePage() {
           {/* Left Column: Upload Section */}
           <div className="flex flex-col gap-4 md:gap-6 lg:h-[calc(100vh-12rem)]">
             {/* Upload Box */}
-            <Card className="shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl hover:border-white/10 transition-all duration-700 flex-shrink-0 group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+            <Card className="shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl transition-all duration-700 flex-shrink-0 group relative overflow-hidden">
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               <CardHeader className="pb-3 relative z-10">
                 <CardTitle className={`text-lg flex items-center gap-2 text-white font-bold ${
                   language === 'bn' ? 'bangla-text' : ''
@@ -71,14 +71,14 @@ export default function WorkspacePage() {
                   {t('upload.subtitle')}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 <FileUploader onFilesUpload={handleFilesUpload} maxFiles={10} hideInfo={false} showSizeNote={true} />
               </CardContent>
             </Card>
 
             {/* Uploaded Files List */}
-            <Card className="shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl hover:border-white/10 transition-all duration-700 flex-1 min-h-0 overflow-hidden flex flex-col group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+            <Card className="shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl transition-all duration-700 flex-1 min-h-0 overflow-hidden flex flex-col group relative">
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               <CardHeader className="pb-3 relative z-10">
                 <div className="flex items-center justify-between">
                   <CardTitle className={`text-lg flex items-center gap-2 text-white font-bold ${
@@ -103,7 +103,14 @@ export default function WorkspacePage() {
                   </CardDescription>
                 )}
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
+              <CardContent
+                className={
+                  `relative z-10 flex-1 ` +
+                  (uploadedFiles.length > 0
+                    ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40'
+                    : 'overflow-y-hidden')
+                }
+              >
                 {uploadedFiles.length > 0 ? (
                   <div className="space-y-2">
                     {uploadedFiles.map((file, index) => (
@@ -137,7 +144,7 @@ export default function WorkspacePage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex h-full flex-col items-center justify-center py-12 text-center">
                     <Upload className="h-12 w-12 md:h-16 md:w-16 mb-4 text-muted-foreground/50" />
                     <p className={`text-sm md:text-base font-medium text-muted-foreground mb-1 ${
                       language === 'bn' ? 'bangla-text' : ''

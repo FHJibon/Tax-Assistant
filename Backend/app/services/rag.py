@@ -2,7 +2,6 @@ import asyncio
 from typing import List, Tuple, Optional, Dict
 from openai import AsyncOpenAI
 from app.core.config import OPENAI_API_KEY, GPT_MODEL
-
 from ..utils.embedding import get_embedding
 from .pinecone import search_index
 
@@ -35,22 +34,18 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, c
 
         numbered_context = "\n\n".join(context_blocks)
         instructions = (
-            "Answer briefly as a Bangladesh tax advisor.\n"
-            "• Use the numbered context as your main source; add Act 2023 / NBR details only if needed to fill a gap.\n"
-            "• Be precise with numbers; when you calculate tax, show a very short slab / rate breakdown.\n"
-            "• Small, focused questions: reply in 1–2 short sentences, no bullets.\n"
-            "• Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
-            "• Do not introduce yourself or add long disclaimers."
+            "Use the numbered context as your primary source.\n"
+            "Small, focused questions: reply in 1–2 short sentences, no bullets.\n"
+            "Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
+            "Do not introduce yourself or add long disclaimers."
         )
     else:
         numbered_context = "(No relevant legal documents found in database)"
         instructions = (
-            "Answer briefly as a Bangladesh tax advisor (no internal documents).\n"
-            "• Rely on your knowledge of the Income Tax Act and current NBR rules.\n"
-            "• Be precise with numbers; when you calculate tax, show a very short slab / rate breakdown.\n"
-            "• Small, focused questions: reply in 1–2 short sentences, no bullets.\n"
-            "• Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
-            "• Do not introduce yourself or add long disclaimers."
+            "Rely on your knowledge of Bangladesh NBR law.\n"
+            "Small, focused questions: reply in 1–2 short sentences, no bullets.\n"
+            "Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
+            "Do not introduce yourself"
         )
 
     lang = _detect_language(query)
@@ -61,12 +56,9 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, c
     )
 
     system_prompt = (
-        "You are an AI tax & law assistant, like a senior Bangladesh tax advisor. "
-        "You focus on the Bangladesh Income Tax Act 2023 and current NBR rules. "
-        "Keep answers friendly, clear and professional, never overly formal. "
-        + target_lang_instruction +
-        " Use conversation history to stay consistent with what the user already said. "
-        "If any context is in another language, translate it but answer only in the target language. "
+        "You are a Senior Bangladesh tax Advisor AI, expert in the Income Tax Act and current NBR rules. "
+        "Always provide clear, concise, and practical answers—friendly."
+        + target_lang_instruction + " If any context or user input is in another language, translate it and always answer only in the target language.\n"
     )
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -89,7 +81,7 @@ async def rag_answer(query: str, top_k: int = 5, score_threshold: float = 0.7, c
     res = await client.chat.completions.create(
         model=GPT_MODEL,
         messages=messages,
-        temperature=0.3 if is_rag_mode else 0.5,
+        temperature=0.2 if is_rag_mode else 0.4,
         max_tokens=400,
     )
 
