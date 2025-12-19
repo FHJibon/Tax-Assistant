@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useI18n } from '@/lib/i18n-provider'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-provider'
@@ -78,7 +79,14 @@ export default function HomePage() {
           <div className="text-center">
             <div className="animate-fade-in-up">
               <div className="flex justify-center mb-6 animate-scale-in">
-                <img src="/logo.svg" alt="Logo" className="h-16 w-16 rounded-xl shadow-lg hover:scale-110 transition-transform duration-300" />
+                <Image
+                  src="/logo.svg"
+                  alt="Logo"
+                  width={64}
+                  height={64}
+                  className="h-16 w-16 rounded-xl shadow-lg hover:scale-110 transition-transform duration-300"
+                  priority
+                />
               </div>
               
               <h1 className={`text-4xl md:text-6xl font-black mb-6 animate-fade-in-up animation-delay-200 ${

@@ -29,6 +29,14 @@ import {
 } from 'lucide-react'
 
 export default function ProfilePage() {
+  return (
+    <React.Suspense fallback={null}>
+      <ProfilePageInner />
+    </React.Suspense>
+  )
+}
+
+function ProfilePageInner() {
   const { t, language, setLanguage } = useI18n()
   const { user } = useAuth()
   const searchParams = useSearchParams()

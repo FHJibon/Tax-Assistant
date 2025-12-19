@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n-provider'
 import { useAuth } from '@/lib/auth-provider'
@@ -45,7 +46,14 @@ export function Navbar() {
             <Link href="/" className="flex items-center space-x-3 group">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
-                <img src="/logo.svg" alt="Logo" className="h-10 w-10 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+                <Image
+                  src="/logo.svg"
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 relative z-10 group-hover:scale-110 transition-transform duration-300"
+                  priority
+                />
               </div>
               <span className="text-lg font-bold text-white hidden md:block">Tax Assistant</span>
             </Link>
