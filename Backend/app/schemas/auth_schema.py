@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr, Field
-from pydantic import ConfigDict
 from datetime import date
 
 class UserCreate(BaseModel):
@@ -18,8 +17,6 @@ class UserRead(BaseModel):
     phone: str | None = None
     address: str | None = None
     occupation: str | None = None
-
-    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str

@@ -20,6 +20,9 @@ import {
   
 } from 'lucide-react'
 
+
+import { userAPI } from '@/lib/api'
+
 export default function DashboardPage() {
   const router = useRouter()
   const { t, language } = useI18n()
@@ -34,15 +37,19 @@ export default function DashboardPage() {
     dateOfBirth: '',
     occupation: ''
   })
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState('')
 
   React.useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login')
-    } else {
-      // Load profile data from localStorage
-      const savedProfile = localStorage.getItem('userProfile')
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile)
+      return
+    }
+    setLoading(true)
+    setError('')
+    userAPI.getProfile()
+      .then((res) => {
+        const profile = res.data
         setUserData({
           name: profile.name || '',
           phone: profile.phone || '',
@@ -50,26 +57,71 @@ export default function DashboardPage() {
           address: profile.address || '',
           tin: profile.tin || '',
           nid: profile.nid || '',
-          dateOfBirth: profile.dateOfBirth || '',
+          // Backend returns `date_of_birth` (snake_case)
+          dateOfBirth: profile.date_of_birth || '',
           occupation: profile.occupation || ''
         })
-      } else {
-        // Fallback from auth provider if no saved profile
-        setUserData(prev => ({
-          ...prev,
-          name: (user?.name ?? prev.name) || '',
-          email: (user?.email ?? prev.email) || '',
-        }))
-      }
-    }
+        // Optionally update localStorage for other pages, using the
+        // same camelCase shape other pages expect (dateOfBirth).
+        const cachedProfile = {
+          name: profile.name || '',
+          email: profile.email || '',
+          nid: profile.nid || '',
+          tin: profile.tin || '',
+          dateOfBirth: profile.date_of_birth || '',
+          phone: profile.phone || '',
+          address: profile.address || '',
+          occupation: profile.occupation || ''
+        }
+        localStorage.setItem('userProfile', JSON.stringify(cachedProfile))
+        setLoading(false)
+      })
+      .catch(() => {
+        // Fallback to localStorage if backend fails
+        const savedProfile = localStorage.getItem('userProfile')
+        if (savedProfile) {
+          const profile = JSON.parse(savedProfile)
+          setUserData({
+            name: profile.name || '',
+            phone: profile.phone || '',
+            email: profile.email || '',
+            address: profile.address || '',
+            tin: profile.tin || '',
+            nid: profile.nid || '',
+            dateOfBirth: profile.dateOfBirth || '',
+            occupation: profile.occupation || ''
+          })
+        } else {
+          setUserData(prev => ({
+            ...prev,
+            name: (user?.name ?? prev.name) || '',
+            email: (user?.email ?? prev.email) || '',
+          }))
+        }
+        setError('Failed to load profile from backend.')
+        setLoading(false)
+      })
   }, [isAuthenticated, user, router])
+
 
   if (!isAuthenticated) {
     return null
   }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#0a0a0a]">
+        <span className="text-white text-lg">{t('common.loading') || 'Loading...'}</span>
+      </div>
+    )
+  }
 
   return (
       <div className="h-screen overflow-hidden relative bg-[#0a0a0a] dark:bg-[#0a0a0a]">
+        {error && (
+          <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-center py-2 z-50">
+            {error}
+          </div>
+        )}
         {/* Animated grid background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute inset-0" style={{

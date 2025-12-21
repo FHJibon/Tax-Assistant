@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from app.utils.db import get_db
+from app.services.db import get_db
 from app.utils.security import decode_access_token
 from app.model.model import User
 from app.schemas.auth_schema import UserRead, ProfileUpdateRequest
@@ -77,7 +77,6 @@ async def update_profile(
         else:
             user.date_of_birth = None
 
-    # Optional phone: allow empty (stored as None), otherwise must be 11 digits
     if payload.phone is not None:
         phone = str(payload.phone).strip()
         if phone:
@@ -87,7 +86,6 @@ async def update_profile(
         else:
             user.phone = None
 
-    # Optional address and occupation: simple trimmed strings, allow clearing
     if payload.address is not None:
         address = str(payload.address).strip()
         user.address = address or None

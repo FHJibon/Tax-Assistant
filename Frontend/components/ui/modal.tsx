@@ -31,9 +31,11 @@ export function Modal({ open, title, onClose, children, actions }: ModalProps) {
         <div className="p-6">
           {title && <h3 className="font-semibold mb-2 text-white">{title}</h3>}
           {children}
-          <div className="mt-6 flex justify-end gap-3">
-            {actions}
-          </div>
+          {actions && (
+            <div className="mt-6 flex justify-end gap-3">
+              {actions}
+            </div>
+          )}
         </div>
       </div>
     </div>,

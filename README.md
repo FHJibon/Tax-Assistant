@@ -1,6 +1,6 @@
 ## ⚡ Quick Start
 
-### Clone & Setup Environment  
+### 1. Clone & Setup Environment  
 ```
 git clone https://github.com/FHJibon/Tax-Assistant.git
 ```
@@ -18,16 +18,19 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Configure Environment Variables
+### 2. Configure Environment
 ```
 Create a .env file
 ```
-### Start Server
+### 3. Backend
 ```
 uvicorn app.main:app --reload
 ```
+ 
+#### Server: http://127.0.0.1:8000  
+#### API's: http://127.0.0.1:8000/docs  
 
-##  Frontend
+##  4. Frontend
 #### In New Terminal:  
 ```
 cd Frontend
@@ -38,6 +41,7 @@ npm install
 ```
 npm run dev
 ```
-### Visit: http://localhost:3000  
-### Server: http://127.0.0.1:8000  
-### API's: http://127.0.0.1:8000/docs  
+#### Visit: http://localhost:3000  
+
+
+**Make sure the backend is running before using the frontend app for full functionality.**

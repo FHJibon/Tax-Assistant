@@ -3,12 +3,29 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
-from app.utils.db import get_db
+from app.services.db import get_db
 from app.utils.security import decode_access_token
-from app.model.model import UploadedDocument, User
+from app.model.model import (
+    UploadedDocument,
+    User,
+    NidInfo,
+    TinInfo,
+    SalaryInfo,
+    BankInfo,
+    InsuranceInfo,
+    DpsInfo,
+    SanchaypatraInfo,
+    LoanInfo,
+)
 from app.services.session import get_or_create_active_session, persist_message
+from app.utils.information import persist_structured_info
 from app.utils.parsing import extract_text
-from app.services.summary import summarize
+from app.services.summary import (
+    summarize,
+    identify_document_type,
+    extract_structured_data,
+    DocType,
+)
 
 router = APIRouter(prefix="/upload", tags=["Upload Documents"])
 
@@ -20,37 +37,24 @@ async def upload_document(
 ):
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
-
     try:
         token = authorization.replace("Bearer ", "").strip()
         payload = decode_access_token(token)
         user_id = int(payload.get("sub"))
-    except HTTPException:
-        raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid Authorization token")
-
     session = await get_or_create_active_session(db, user_id)
-
-    user = await db.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not (user.nid and user.tin):
-        raise HTTPException(
-            status_code=400,
-            detail="Complete your profile with NID and TIN Number before uploading documents",
-        )
-
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user or not (user.nid and user.tin):
+        raise HTTPException(status_code=400, detail="Complete profile with NID and TIN")
     content = await file.read()
-    max_bytes = 5 * 1024 * 1024
-    if len(content) > max_bytes:
-        raise HTTPException(status_code=400, detail="File too large. Max size is 5 MB")
-
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Max 5 MB")
     existing = await db.execute(select(UploadedDocument).where(UploadedDocument.session_id == session.id))
     docs = existing.scalars().all()
     if len(docs) >= 10:
-        raise HTTPException(status_code=400, detail="Upload limit reached. Maximum 10 files per session")
-
+        raise HTTPException(status_code=400, detail="Upload limit reached")
     doc = UploadedDocument(
         session_id=session.id,
         filename=file.filename,
@@ -61,29 +65,84 @@ async def upload_document(
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
-
-    summary: str | None = None
+    summary = None
+    doc_type: DocType = DocType.UNKNOWN
     try:
         extracted_text = await extract_text(
             filename=file.filename,
             mime_type=file.content_type,
             content=content,
         )
+        doc_type = await identify_document_type(extracted_text)
+        if doc_type != DocType.UNKNOWN:
+            structured = await extract_structured_data(extracted_text, doc_type)
+            if structured:
+                await persist_structured_info(
+                    db,
+                    session_id=session.id,
+                    user_id=user_id,
+                    doc_type=doc_type,
+                    data=structured,
+                )
         summary = await summarize(filename=file.filename or "document", text=extracted_text)
+        if doc_type == DocType.UNKNOWN and not summary:
+            summary = "- Title: <short>\n- Overview: 4-5 sentences maximum\n"
         if summary:
             await persist_message(
                 db,
                 session.id,
                 "assistant",
-                f"Document summary — {file.filename or 'document'}\n\n{summary}",
+                f"Summary: {file.filename}\n{summary}",
             )
     except Exception:
         summary = None
-
     return JSONResponse({
         "filename": file.filename,
         "status": "uploaded",
         "session_id": session.id,
         "document_id": doc.id,
         "summary": summary,
+        "doc_type": doc_type.value,
     })
+
+
+@router.get("/status")
+async def get_upload_status(
+    authorization: Optional[str] | None = Header(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return which structured document types exist for the user's active session.
+
+    This is used by the frontend to restore the reviewed-documents ticks
+    after page refresh or backend restart.
+    """
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    try:
+        token = authorization.replace("Bearer ", "").strip()
+        payload = decode_access_token(token)
+        user_id = int(payload.get("sub"))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Authorization token")
+
+    session = await get_or_create_active_session(db, user_id)
+
+    async def _has_rows(model_cls) -> bool:
+        result = await db.execute(
+            select(model_cls.id).where(model_cls.session_id == session.id).limit(1)
+        )
+        return result.scalar_one_or_none() is not None
+
+    statuses = {
+        "nid": await _has_rows(NidInfo),
+        "tin": await _has_rows(TinInfo),
+        "salary": await _has_rows(SalaryInfo),
+        "bank": await _has_rows(BankInfo),
+        "insurance": await _has_rows(InsuranceInfo),
+        "dps": await _has_rows(DpsInfo),
+        "sanchaypatra": await _has_rows(SanchaypatraInfo),
+        "loan": await _has_rows(LoanInfo),
+    }
+
+    return JSONResponse(statuses)

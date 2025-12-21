@@ -76,6 +76,9 @@ function ProfilePageInner() {
     return /^[0-9]{12}$/.test(s)
   }, [profile.tin])
 
+  // Track if TIN input was blurred
+  const [tinTouched, setTinTouched] = React.useState(false)
+
   // Phone: allow empty, otherwise must be exactly 11 digits
   const phoneValid = React.useMemo(() => {
     const s = (profile.phone || '').trim()
@@ -476,13 +479,17 @@ function ProfilePageInner() {
                       onChange={(e) => {
                         const digitsOnly = e.target.value.replace(/\D/g, '')
                         setProfile({ ...profile, tin: digitsOnly })
+                        if (tinTouched) setTinTouched(false)
                       }}
+                      onBlur={() => setTinTouched(true)}
                       disabled={!isEditing}
                       placeholder="Enter your TIN"
                     />
-                    {isEditing && profile.tin && !tinValid && (
+                    {isEditing && tinTouched && (!profile.tin || !tinValid) && (
                       <div className="text-xs text-red-400">
-                        {language === 'bn' ? 'TIN ১২ সংখ্যার হতে হবে' : 'TIN must be 12 digits'}
+                        {language === 'bn'
+                          ? (!profile.tin ? 'TIN ফাঁকা রাখা যাবে না' : 'TIN ১২ সংখ্যার হতে হবে')
+                          : (!profile.tin ? 'TIN cannot be empty' : 'TIN must be 12 digits')}
                       </div>
                     )}
                   </div>
@@ -689,7 +696,21 @@ function ProfilePageInner() {
                         setCpMsg('Failed to change password')
                       }
                     } catch (err: any) {
-                      setCpMsg(err?.response?.data?.detail || 'Failed to change password')
+                      let message = 'Failed to change password'
+                      const detail = err?.response?.data?.detail
+
+                      if (typeof detail === 'string') {
+                        message = detail
+                      } else if (Array.isArray(detail) && detail.length > 0) {
+                        const first = detail[0]
+                        if (typeof first?.msg === 'string') {
+                          message = first.msg
+                        }
+                      } else if (err?.message) {
+                        message = err.message
+                      }
+
+                      setCpMsg(message)
                     }
                   }}>Save</Button>
                   <Button variant="outline" className="flex-1" onClick={() => setCpOpen(false)}>Cancel</Button>

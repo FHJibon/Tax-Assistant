@@ -54,7 +54,6 @@ def _send_mail_sync(*, recipient_email: str, subject: str, body: str) -> None:
 async def send_mail(recipient_email: str, subject: str, body: str) -> None:
     await asyncio.to_thread(_send_mail_sync, recipient_email=recipient_email, subject=subject, body=body)
 
-
 async def send_otp(recipient_email: str, purpose: str = "login") -> str:
     code = otp_code()
     subject = f"Your {purpose.capitalize()} Code"

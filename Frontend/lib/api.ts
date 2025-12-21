@@ -88,6 +88,12 @@ export const taxAPI = {
     api.post('/chat/', { message, top_k: topK }, { timeout: timeoutMs }),
   getHistory: () => api.get('/chat/history'),
   terminateSession: () => api.post('/chat/terminate'),
+  generateTaxReturn: () =>
+    api.get('/generate/tax-return', { responseType: 'blob' }),
+}
+
+export const uploadAPI = {
+  getStatus: () => api.get('/upload/status'),
 }
 
 export const userAPI = {

@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.auth_schema import UserCreate, UserRead, Token, VerifyOTPRequest, ForgotPasswordRequest, ResetPasswordRequest, LoginRequest, ChangePasswordRequest, DeleteAccountRequest
-from app.services.users import authenticate_user, get_user_by_email, start_signup, verify_signup, start_password_reset, reset_password, change_password, delete_user_and_data
+from app.services.users import authenticate_user, get_user_by_email, start_signup, verify_signup, start_password_reset, reset_password, change_pass, delete_user_and_data
 from app.utils.security import create_access_token, decode_access_token
-from app.utils.db import get_db
+from app.services.db import get_db
 from app.model.model import User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -57,7 +57,7 @@ async def change_password(payload: ChangePasswordRequest, authorization: str | N
     if not sub:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    await change_password(db, int(sub), payload.current_password, payload.new_password)
+    await change_pass(db, int(sub), payload.current_password, payload.new_password)
     return {"message": "Password changed successfully."}
 
 @router.post("/delete-account")

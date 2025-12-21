@@ -5,7 +5,7 @@ from app.model.model import User
 from app.utils.security import check_pw, hash_pw, send_otp
 from datetime import datetime, timedelta
 
-_pending_signup: dict[str, tuple[str, str, datetime]] = {}
+_pending_signup: dict[str, tuple[str, str, str, datetime]] = {}
 _pending_password_reset: dict[str, tuple[str, datetime]] = {}
 
 def _now():
@@ -23,6 +23,7 @@ async def create_user(db: AsyncSession, name: str, email: str, password: str):
         hashed_password = await hash_pw(password)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Password hashing error: {str(e)}")
+
     user = User(name=name, email=email, hashed_password=hashed_password)
     db.add(user)
     await db.commit()
@@ -57,7 +58,7 @@ async def verify_signup(db: AsyncSession, email: str, code: str):
     if user:
         _pending_signup.pop(email, None)
         return False
-    new_user = User(name=name, email=email, hashed_password=hashed_password)
+    new_user = User(name=name, email=email, hashed_password=hashed_password)  
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -91,7 +92,7 @@ async def reset_password(db: AsyncSession, email: str, code: str, new_password: 
     _pending_password_reset.pop(email, None)
     return True
 
-async def change_password(db: AsyncSession, user_id: int, current_password: str, new_password: str) -> bool:
+async def change_pass(db: AsyncSession, user_id: int, current_password: str, new_password: str) -> bool:
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

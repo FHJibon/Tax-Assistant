@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from app.schemas.chat_schema import ChatRequest, QueryResponse, ChatHistoryResponse
 from app.services.rag import answer as rag
-from app.utils.db import get_db
+from app.services.db import get_db
 from app.utils.security import decode_access_token
 from app.services.session import (
     get_or_create_active_session,

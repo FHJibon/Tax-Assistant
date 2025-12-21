@@ -1,6 +1,18 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
-from app.model.model import ChatSession, ChatMessage, UploadedDocument
+from app.model.model import (
+    ChatSession,
+    ChatMessage,
+    UploadedDocument,
+    NidInfo,
+    TinInfo,
+    SalaryInfo,
+    BankInfo,
+    InsuranceInfo,
+    DpsInfo,
+    SanchaypatraInfo,
+    LoanInfo,
+)
 
 async def get_or_create_active_session(db: AsyncSession, user_id: int) -> ChatSession:
     result = await db.execute(
@@ -23,6 +35,14 @@ async def terminate_active_session(db: AsyncSession, user_id: int) -> str:
     if current:
         await db.execute(delete(ChatMessage).where(ChatMessage.session_id == current.id))
         await db.execute(delete(UploadedDocument).where(UploadedDocument.session_id == current.id))
+        await db.execute(delete(NidInfo).where(NidInfo.session_id == current.id))
+        await db.execute(delete(TinInfo).where(TinInfo.session_id == current.id))
+        await db.execute(delete(SalaryInfo).where(SalaryInfo.session_id == current.id))
+        await db.execute(delete(BankInfo).where(BankInfo.session_id == current.id))
+        await db.execute(delete(InsuranceInfo).where(InsuranceInfo.session_id == current.id))
+        await db.execute(delete(DpsInfo).where(DpsInfo.session_id == current.id))
+        await db.execute(delete(SanchaypatraInfo).where(SanchaypatraInfo.session_id == current.id))
+        await db.execute(delete(LoanInfo).where(LoanInfo.session_id == current.id))
         await db.execute(delete(ChatSession).where(ChatSession.id == current.id))
         await db.commit()
     fresh = ChatSession(user_id=user_id, active=True)
@@ -40,6 +60,14 @@ async def delete_active_session(db: AsyncSession, user_id: int) -> bool:
         return False
     await db.execute(delete(ChatMessage).where(ChatMessage.session_id == current.id))
     await db.execute(delete(UploadedDocument).where(UploadedDocument.session_id == current.id))
+    await db.execute(delete(NidInfo).where(NidInfo.session_id == current.id))
+    await db.execute(delete(TinInfo).where(TinInfo.session_id == current.id))
+    await db.execute(delete(SalaryInfo).where(SalaryInfo.session_id == current.id))
+    await db.execute(delete(BankInfo).where(BankInfo.session_id == current.id))
+    await db.execute(delete(InsuranceInfo).where(InsuranceInfo.session_id == current.id))
+    await db.execute(delete(DpsInfo).where(DpsInfo.session_id == current.id))
+    await db.execute(delete(SanchaypatraInfo).where(SanchaypatraInfo.session_id == current.id))
+    await db.execute(delete(LoanInfo).where(LoanInfo.session_id == current.id))
     await db.execute(delete(ChatSession).where(ChatSession.id == current.id))
     await db.commit()
     return True

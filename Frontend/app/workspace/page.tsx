@@ -4,20 +4,44 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n-provider'
 import { useAuth } from '@/lib/auth-provider'
+import { uploadAPI, taxAPI } from '@/lib/api'
 import { Navbar } from '@/components/Navbar'
 import { FileUploader } from '@/components/FileUploader'
 import { ChatBox } from '@/components/ChatBox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, FileText, MessageSquare, CheckCircle, X } from 'lucide-react'
+import { Upload, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 
 export default function WorkspacePage() {
   const { t, language } = useI18n()
   const { isAuthenticated, initialized } = useAuth()
   const router = useRouter()
-  const [uploadedFiles, setUploadedFiles] = React.useState<File[]>([])
   const [isSummarizing, setIsSummarizing] = React.useState(false)
   const [chatReloadToken, setChatReloadToken] = React.useState(0)
+  const [reviewedDocTypes, setReviewedDocTypes] = React.useState<Record<string, boolean>>({})
+  const [showMissingModal, setShowMissingModal] = React.useState(false)
+  const [missingDocs, setMissingDocs] = React.useState<string[]>([])
+  const [isGenerating, setIsGenerating] = React.useState(false)
+  const [showGenerateTerms, setShowGenerateTerms] = React.useState(false)
+  const [generateError, setGenerateError] = React.useState<string | null>(null)
+
+  const docTypeDefinitions = React.useMemo(
+    () => [
+      { key: 'nid', labelEn: 'Nation ID', labelBn: 'এনআইডি' },
+      { key: 'tin', labelEn: 'TIN Certificate', labelBn: 'টিন সার্টিফিকেট' },
+      { key: 'salary', labelEn: 'Salary Certificate', labelBn: 'বেতন সার্টিফিকেট' },
+      { key: 'bank', labelEn: 'Bank Statement', labelBn: 'ব্যাংক স্টেটমেন্ট' },
+      { key: 'insurance', labelEn: 'Insurance Statement', labelBn: 'বীমা' },
+      { key: 'dps', labelEn: 'DPS Statement', labelBn: 'ডিপিএস' },
+      { key: 'sanchaypatra', labelEn: 'Saving Certificate', labelBn: 'সঞ্চয়পত্র' },
+      { key: 'loan', labelEn: 'Loan Statement', labelBn: 'ঋণ স্টেটমেন্ট' },
+    ],
+    []
+  )
+
+  // Only these documents are required for Generate
+  const requiredDocKeys = React.useMemo(() => ['nid', 'tin', 'salary'], [])
 
   React.useEffect(() => {
     if (initialized && !isAuthenticated) {
@@ -25,17 +49,90 @@ export default function WorkspacePage() {
     }
   }, [isAuthenticated, initialized, router])
 
-  const handleFilesUpload = (files: File[]) => {
-    setUploadedFiles(prev => [...prev, ...files])
+  const handleFilesUpload = (_files: File[]) => {
+    // We no longer display individual file rows; only doc-type status.
   }
 
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index))
+  const handleDocumentClassified = (docType: string | null) => {
+    if (!docType || docType === 'unknown') return
+    setReviewedDocTypes(prev => ({ ...prev, [docType]: true }))
   }
+
+  // On load, fetch which document types already exist for this
+  // session so ticks persist across page/backend refresh.
+  React.useEffect(() => {
+    if (!initialized || !isAuthenticated) return
+
+    let cancelled = false
+
+    const loadStatus = async () => {
+      try {
+        const { data } = await uploadAPI.getStatus()
+        if (cancelled || !data) return
+
+        const next: Record<string, boolean> = {}
+        docTypeDefinitions.forEach((d) => {
+          const raw = (data as any)[d.key]
+          next[d.key] = Boolean(raw)
+        })
+        setReviewedDocTypes(next)
+      } catch {
+        // ignore; user can still upload and set flags client-side
+      }
+    }
+
+    loadStatus()
+
+    return () => {
+      cancelled = true
+    }
+  }, [initialized, isAuthenticated, docTypeDefinitions])
 
   if (!initialized) return null
   if (!isAuthenticated) {
     return null
+  }
+
+  const handleGenerateClick = async () => {
+    const missing = docTypeDefinitions
+      .filter(d => requiredDocKeys.includes(d.key) && !reviewedDocTypes[d.key])
+      .map(d => (language === 'bn' ? d.labelBn : d.labelEn))
+
+    if (missing.length > 0) {
+      setMissingDocs(missing)
+      setShowMissingModal(true)
+      return
+    }
+
+    // All required documents present – ask user to agree to terms
+    setShowGenerateTerms(true)
+  }
+
+  const handleConfirmGenerate = async () => {
+    try {
+      setIsGenerating(true)
+      const response = await taxAPI.generateTaxReturn()
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'tax_return.pdf'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      setShowGenerateTerms(false)
+    } catch (error) {
+      console.error('Failed to generate tax return:', error)
+      setShowGenerateTerms(false)
+      setGenerateError(
+        language === 'bn'
+          ? 'ট্যাক্স রিটার্ন তৈরি করা যায়নি। পরে আবার চেষ্টা করুন।'
+          : 'Failed to generate tax return. Please try again later.'
+      )
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
@@ -56,9 +153,9 @@ export default function WorkspacePage() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Left Column: Upload Section */}
-          <div className="flex flex-col gap-4 md:gap-6 lg:h-[calc(100vh-12rem)]">
+          <div className="flex flex-col gap-2 md:gap-4 lg:h-[calc(100vh-12rem)]">
             {/* Upload Box */}
-            <Card className="shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl transition-all duration-700 flex-shrink-0 group relative overflow-hidden">
+            <Card className="shadow-2xl border border-blue-500/15 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-slate-950/95 backdrop-blur-2xl transition-all duration-700 flex-shrink-0 group relative overflow-hidden">
               <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               <CardHeader className="pb-3 relative z-10">
                 <CardTitle className={`text-lg flex items-center gap-2 text-white font-bold ${
@@ -69,9 +166,6 @@ export default function WorkspacePage() {
                   </div>
                   {language === 'bn' ? 'নথি আপলোড' : 'Upload Documents'}
                 </CardTitle>
-                <CardDescription className={`${language === 'bn' ? 'bangla-text text-sm' : 'text-sm'} text-gray-400`}>
-                  {t('upload.subtitle')}
-                </CardDescription>
               </CardHeader>
               <CardContent className="relative z-10">
                 <FileUploader
@@ -81,96 +175,142 @@ export default function WorkspacePage() {
                   showSizeNote={true}
                   onSummarizingChange={setIsSummarizing}
                   onUploadComplete={() => setChatReloadToken((prev) => prev + 1)}
+                  onDocumentClassified={handleDocumentClassified}
                 />
               </CardContent>
             </Card>
 
-            {/* Uploaded Files List */}
-            <Card className="shadow-2xl border border-white/5 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-gray-950/90 backdrop-blur-2xl transition-all duration-700 flex-1 min-h-0 overflow-hidden flex flex-col group relative">
+            {/* Reviewed Documents Status */}
+            <Card className="shadow-2xl border border-blue-500/15 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-slate-950/95 backdrop-blur-2xl transition-all duration-700 flex-1 min-h-0 overflow-hidden flex flex-col group relative">
               <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-              <CardHeader className="pb-3 relative z-10">
-                <div className="flex items-center justify-between">
-                  <CardTitle className={`text-lg flex items-center gap-2 text-white font-bold ${
-                    language === 'bn' ? 'bangla-text' : ''
-                  }`}>
-                    <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg border border-green-500/20">
-                      <FileText className="h-5 w-5 text-green-400" />
-                    </div>
-                    {language === 'bn' ? 'আপলোড করা ফাইল' : 'Uploaded Files'}
-                  </CardTitle>
-                  {uploadedFiles.length > 0 && (
-                    <span className="text-sm font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                      {uploadedFiles.length}
-                    </span>
-                  )}
-                </div>
-                {uploadedFiles.length > 0 && (
-                  <CardDescription className={language === 'bn' ? 'bangla-text text-sm' : 'text-sm'}>
-                    {language === 'bn' 
-                      ? `${uploadedFiles.length} টি ফাইল সফলভাবে আপলোড হয়েছে` 
-                      : `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} uploaded successfully`}
-                  </CardDescription>
-                )}
-              </CardHeader>
+              {/* Header intentionally removed to hide the Reviewed Documents title */}
               <CardContent
-                className={
-                  `relative z-10 flex-1 ` +
-                  (uploadedFiles.length > 0
-                    ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40'
-                    : 'overflow-y-hidden')
-                }
+                className="relative z-10 flex-1 overflow-visible flex flex-col"
               >
-                {uploadedFiles.length > 0 ? (
-                  <div className="space-y-2">
-                    {uploadedFiles.map((file, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-center justify-between p-3 bg-muted/50 hover:bg-muted/70 rounded-lg transition-colors group"
+                {/* Reviewed document types summary */}
+                <div className="mt-6 pt-0 h-full flex flex-col">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm items-stretch flex-1" style={{ gridAutoRows: '1fr' }}>
+                    {docTypeDefinitions.map((doc) => {
+                      const done = reviewedDocTypes[doc.key]
+                      const label = language === 'bn' ? doc.labelBn : doc.labelEn
+                      return (
+                        <div
+                          key={doc.key}
+                          className={`h-full flex items-center justify-between px-3 py-2 rounded-lg transition-transform duration-200 ease-in-out transform ${
+                            done ? 'bg-gradient-to-r from-emerald-900/30 to-emerald-900/10 ring-1 ring-emerald-400/20 shadow-[0_6px_18px_rgba(6,95,70,0.08)]' : 'bg-black/20 hover:scale-[1.02] hover:bg-white/2'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-8 h-8 rounded-md flex items-center justify-center ${done ? 'bg-emerald-500/10' : 'bg-white/2'} text-[13px]`}> 
+                              <svg className={`w-4 h-4 ${done ? 'text-emerald-400 animate-pulse' : 'text-gray-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0">
+                              <div className={`truncate font-medium ${done ? 'text-emerald-200' : 'text-gray-300'}`}>{label}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            {done ? (
+                              <div className="w-7 h-7 rounded-full bg-emerald-600/20 flex items-center justify-center ring-1 ring-emerald-400/25">
+                                <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <div className="w-3 h-3 rounded-full bg-gray-600/40" />
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <Button
+                    className="w-full mt-4 lg:mt-6 btn-cool text-white"
+                    size="sm"
+                    disabled={Object.keys(reviewedDocTypes).length === 0 || isGenerating}
+                    onClick={handleGenerateClick}
+                  >
+                    {isGenerating
+                      ? (language === 'bn' ? 'Generating...' : 'Generating...')
+                      : (language === 'bn' ? 'Generate' : 'Generate')}
+                  </Button>
+                  <Modal
+                    open={showMissingModal}
+                    title={language === 'bn' ? 'নথি আপলোড করুন' : 'Upload Required Documents'}
+                    onClose={() => setShowMissingModal(false)}
+                    actions={
+                      <Button onClick={() => setShowMissingModal(false)} className="bg-blue-600 hover:bg-blue-700 text-white">{language === 'bn' ? 'ঠিক আছে' : 'OK'}</Button>
+                    }
+                  >
+                    <div className="text-white/90 text-sm">
+                      {language === 'bn'
+                        ? 'নিম্নলিখিত ডকুমেন্টগুলো আপলোড করা হয়নি:'
+                        : 'The following documents have not been uploaded:'}
+                      <ul className="list-disc pl-6 mt-2">
+                        {missingDocs.map((doc, i) => (
+                          <li key={i}>{doc}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Modal>
+
+                  {/* Terms confirmation before generating PDF (single box, centered text) */}
+                  <Modal
+                    open={showGenerateTerms}
+                    onClose={() => {
+                      if (!isGenerating) setShowGenerateTerms(false)
+                    }}
+                    actions={null}
+                  >
+                    <p className="text-sm text-center text-gray-100">
+                              {language === 'bn'
+                                ? 'আপনি সম্মত যে প্রদত্ত তথ্যের ভিত্তিতে আপনার ট্যাক্স রিটার্ন তৈরি করা হবে এবং এটি শুধুমাত্র ডকুমেন্টেশন ও পরামর্শের জন্য ব্যবহৃত হবে।'
+                                : 'By continuing, you agree that your tax return will be generated based on the uploaded documents.'}
+                    </p>
+                    <div className="mt-6 flex gap-3 justify-between">
+                      <Button
+                        variant="ghost"
+                        className="flex-1 text-white/90"
+                        disabled={isGenerating}
+                        onClick={() => { if (!isGenerating) setShowGenerateTerms(false) }}
                       >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="p-2 bg-primary/10 rounded-md">
-                            <FileText className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(2)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center py-12 text-center">
-                    <Upload className="h-12 w-12 md:h-16 md:w-16 mb-4 text-muted-foreground/50" />
-                    <p className={`text-sm md:text-base font-medium text-muted-foreground mb-1 ${
-                      language === 'bn' ? 'bangla-text' : ''
-                    }`}>
-                      {language === 'bn' 
-                        ? 'কোনো ফাইল আপলোড করা হয়নি' 
-                        : 'No files uploaded yet'}
+                        {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
+                      </Button>
+                      <Button
+                        className="flex-1 bg-white text-blue-900 hover:opacity-95"
+                        disabled={isGenerating}
+                        onClick={handleConfirmGenerate}
+                      >
+                        {isGenerating
+                          ? (language === 'bn' ? 'তৈরি হচ্ছে...' : 'Generating...')
+                          : (language === 'bn' ? 'Continue' : 'Continue')}
+                      </Button>
+                    </div>
+                  </Modal>
+
+                  {/* Error popup if PDF generation fails (single box, centered text) */}
+                  <Modal
+                    open={!!generateError}
+                    onClose={() => setGenerateError(null)}
+                    actions={null}
+                  >
+                    <p className="text-sm text-center text-gray-100">
+                      {generateError || (language === 'bn'
+                        ? 'ট্যাক্স রিটার্ন তৈরি করা যায়নি। পরে আবার চেষ্টা করুন।'
+                        : 'Failed to generate tax return. Please try again later.')}
                     </p>
-                    <p className={`text-xs md:text-sm text-muted-foreground/70 ${
-                      language === 'bn' ? 'bangla-text' : ''
-                    }`}>
-                      {language === 'bn' 
-                        ? 'উপরে আপনার নথি আপলোড করুন' 
-                        : 'Upload your documents above'}
-                    </p>
-                  </div>
-                )}
+                    <div className="mt-6 flex justify-center">
+                      <Button
+                        className="px-6 bg-white text-blue-900 hover:opacity-95"
+                        onClick={() => setGenerateError(null)}
+                      >
+                        {language === 'bn' ? 'ঠিক আছে' : 'OK'}
+                      </Button>
+                    </div>
+                  </Modal>
+                </div>
               </CardContent>
             </Card>
           </div>

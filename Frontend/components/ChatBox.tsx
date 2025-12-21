@@ -110,18 +110,18 @@ export function ChatBox({ className, externalLoading, externalLoadingText, reloa
     }
   }, [externalLoading])
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return
+  const sendChat = async (content: string) => {
+    const trimmed = content.trim()
+    if (!trimmed) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputMessage,
+      content: trimmed,
       sender: 'user',
       timestamp: new Date(),
     }
 
     setMessages(prev => [...prev, userMessage])
-    setInputMessage('')
     setIsTyping(true)
 
     try {
@@ -144,6 +144,13 @@ export function ChatBox({ className, externalLoading, externalLoadingText, reloa
     } finally {
       setIsTyping(false)
     }
+  }
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return
+    const current = inputMessage
+    setInputMessage('')
+    await sendChat(current)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -170,22 +177,24 @@ export function ChatBox({ className, externalLoading, externalLoadingText, reloa
         {/* Messages Area */}
         <div
           ref={messagesContainerRef}
-          className={`flex-1 p-4 md:p-6 space-y-6 min-h-0 overflow-y-auto scrollbar-hide`}
+          className={`flex-1 p-4 md:p-6 space-y-6 min-h-0 overflow-y-auto scrollbar-hide ${
+            !hasMessages && !isTyping && !externalLoading
+              ? 'flex items-center justify-center'
+              : ''
+          }`}
         >
           {/* Greeting only when there are no messages and no loading */}
           {!hasMessages && !isTyping && !externalLoading && (
-            <div className="flex items-start justify-start">
-              <div className="text-left max-w-xl animate-fade-in-scale">
-                <div className="inline-flex items-center justify-center mb-4 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="text-xl md:text-2xl font-semibold mb-2">
-                  {displayName ? `Hello, ${displayName}.` : 'Hello.'}
-                </h2>
-                <p className="text-sm md:text-base text-gray-400">
-                  How can I help you with your tax questions today?
-                </p>
+            <div className="text-center max-w-xl animate-fade-in-scale">
+              <div className="inline-flex items-center justify-center mb-4 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg shadow-blue-600/30">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
+              <h2 className="text-xl md:text-2xl font-semibold mb-2">
+                {displayName ? `Hello, ${displayName}.` : 'Hello.'}
+              </h2>
+              <p className="text-sm md:text-base text-gray-400">
+                How can I help you with your tax questions today?
+              </p>
             </div>
           )}
           {/* Existing messages */}

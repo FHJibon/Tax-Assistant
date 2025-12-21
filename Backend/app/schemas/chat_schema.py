@@ -19,13 +19,11 @@ class ChatRequest(BaseModel):
     message: str
     top_k: int = 10
 
-
 class ChatMessageRead(BaseModel):
     id: int
     role: str
     content: str
     created_at: Optional[str] = None
-
 
 class ChatHistoryResponse(BaseModel):
     messages: List[ChatMessageRead]
