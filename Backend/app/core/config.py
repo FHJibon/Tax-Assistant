@@ -17,4 +17,5 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX = "tax-index"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 MODEL_NAME = "text-embedding-3-small"
-GPT_MODEL = "gpt-4o-mini"
+GPT_MODEL = "gpt-5.2"
+VISION_MODEL = "gpt-5.2"

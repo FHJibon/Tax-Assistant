@@ -54,10 +54,9 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
 
         numbered_context = "\n\n".join(combined_context_blocks)
         instructions = (
-            "Use the context below as your primary source. "
-            "Use Income Tax Act 2023 as a secondary reference if needed.\n"
+            "Use the context below as your primary source. Use Income Tax Act 2023 as a secondary reference when needed.\n"
             "Small or focused questions: reply in 1–2 short sentences.\n"
-            "Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
+            "Bigger questions or calculation: one summary sentence, add up to 5 bullet points for clarity.\n"
             "Do not introduce yourself or add long disclaimers."
         )
         is_rag_mode = True
@@ -66,7 +65,7 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
         instructions = (
             "Rely on fully knowledge of Bangladesh NBR laws and Income Tax Act 2023.\n"
             "Small or focused questions: reply in 1–2 short sentences.\n"
-            "Bigger questions: one summary sentence, then up to 3 helpful bullet points if they really add clarity.\n"
+            "Bigger questions or calculation: one summary sentence, add up to 5 bullet points for clarity.\n"
             "Do not introduce yourself or add long disclaimers"
         )
         is_rag_mode = False
@@ -94,8 +93,8 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
                 messages.append({"role": role, "content": content})
 
     user_prompt = (
-        f"Instructions:\n{instructions}\n\n"
-        f"Context:\n{numbered_context}\n\n"
+        f"Instructions: {instructions}\n"
+        f"Context: {numbered_context}\n"
         f"User question: {query}"
     )
 
@@ -105,10 +104,12 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
         model=GPT_MODEL,
         messages=messages,
         temperature=0.2 if is_rag_mode else 0.4,
-        max_tokens=800,
+        max_completion_tokens=800,
     )
 
+    import re
     answer = res.choices[0].message.content
+    answer = answer.replace('—', ', ')
     return answer, sources
 
 async def answer(query: str, top_k: int = 5, score_threshold: float = 0.5, chat_history: Optional[List[Dict]] = None) -> Tuple[str, List[dict]]:

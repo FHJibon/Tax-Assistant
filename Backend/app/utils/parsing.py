@@ -3,7 +3,7 @@ import asyncio
 import base64
 from io import BytesIO
 from openai import AsyncOpenAI
-from app.core.config import OPENAI_API_KEY, GPT_MODEL
+from app.core.config import OPENAI_API_KEY, VISION_MODEL
 
 _client: AsyncOpenAI | None = None
 
@@ -57,7 +57,7 @@ async def extract_text(*, filename: str | None, mime_type: str | None, content: 
 
     try:
         res = await client.chat.completions.create(
-            model=GPT_MODEL,
+            model=VISION_MODEL,
             messages=[
                 {"role": "system", "content": system},
                 {
@@ -69,7 +69,7 @@ async def extract_text(*, filename: str | None, mime_type: str | None, content: 
                 },
             ],
             temperature=0.0,
-            max_tokens=1500,
+            max_completion_tokens=1500,
         )
         return (res.choices[0].message.content or "").strip()
     except Exception:

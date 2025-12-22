@@ -69,9 +69,16 @@ async def summarize(
             {"role": "user", "content": prompt},
         ],
         temperature=0.2,
-        max_tokens=800,
+        max_completion_tokens=800,
     )
-    return (res.choices[0].message.content or "").strip()
+
+    content = (res.choices[0].message.content or "").strip()
+    if not content:
+        return None
+    
+    import re
+    content = re.sub(r"\s*[—–]\s*", ", ", content)
+    return content
 
 
 class DocType(str, Enum):
@@ -125,7 +132,7 @@ async def identify_document_type(raw_text: str) -> DocType:
                 {"role": "user", "content": user},
             ],
             temperature=0.0,
-            max_tokens=800,
+            max_completion_tokens=800,
         )
     except Exception:
         return DocType.UNKNOWN
@@ -192,7 +199,7 @@ async def extract_structured_data(raw_text: str, doc_type: DocType) -> Optional[
             ],
             temperature=0,
             response_format={"type": "json_object"},
-            max_tokens=1200,
+            max_completion_tokens=800,
         )
     except Exception:
         return None

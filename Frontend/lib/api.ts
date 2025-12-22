@@ -4,7 +4,8 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 const api: AxiosInstance = axios.create({
   // FastAPI runs on :8000 without '/api' prefix
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  timeout: 10000,
+  // Image uploads can take longer due to OCR/summarization.
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,6 +14,29 @@ const api: AxiosInstance = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
+    // If sending FormData (file upload), don't force JSON Content-Type.
+    // Axios/browser will set the correct multipart boundary automatically.
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      // Axios header typing differs across versions; normalize defensively.
+      const headers: any = config.headers || {}
+      try {
+        if (headers && typeof headers.delete === 'function') {
+          headers.delete('Content-Type')
+        }
+      } catch {
+        // ignore
+      }
+      if (headers) {
+        delete headers['Content-Type']
+        delete headers['content-type']
+        if (headers.common) {
+          delete headers.common['Content-Type']
+          delete headers.common['content-type']
+        }
+      }
+      config.headers = headers
+    }
+
     // Add auth token if available
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     if (token) {

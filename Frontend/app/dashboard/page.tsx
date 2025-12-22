@@ -184,7 +184,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'পূর্ণ নাম' : 'Full Name'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.name || '—'}
+                      {userData.name || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.phone || '—'}
+                      {userData.phone || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'ইমেইল ঠিকানা' : 'Email Address'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.email || '—'}
+                      {userData.email || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'ঠিকানা' : 'Address'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.address || '—'}
+                      {userData.address || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'টিআইএন নম্বর' : 'TIN Number'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.tin || '—'}
+                      {userData.tin || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'এনআইডি নম্বর' : 'NID Number'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.nid || '—'}
+                      {userData.nid || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'জন্ম তারিখ' : 'Date of Birth'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.dateOfBirth ? new Date(userData.dateOfBirth).toLocaleDateString('en-GB', { timeZone: 'UTC' }) : '—'}
+                      {userData.dateOfBirth ? new Date(userData.dateOfBirth).toLocaleDateString('en-GB', { timeZone: 'UTC' }) : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -296,7 +296,7 @@ export default function DashboardPage() {
                       {language === 'bn' ? 'পেশা' : 'Occupation'}
                     </p>
                     <p className={`font-bold text-xl text-white ${language === 'bn' ? 'bangla-text' : ''}`}>
-                      {userData.occupation || '—'}
+                      {userData.occupation || 'N/A'}
                     </p>
                   </div>
                 </div>

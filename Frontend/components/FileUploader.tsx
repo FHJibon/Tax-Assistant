@@ -51,8 +51,8 @@ export function FileUploader({
   const [statusType, setStatusType] = React.useState<'info' | 'error' | 'success'>("info")
   const [showPopup, setShowPopup] = React.useState(false)
   const [popupMessage, setPopupMessage] = React.useState('')
-  const [showProfileUpdatePopup, setShowProfileUpdatePopup] = React.useState(false)
-  const [profileUpdateDocType, setProfileUpdateDocType] = React.useState<string | null>(null)
+  const [showLimitPopup, setShowLimitPopup] = React.useState(false)
+  const [limitPopupMessage, setLimitPopupMessage] = React.useState('')
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -87,8 +87,8 @@ export function FileUploader({
   const processFiles = (newFiles: File[]) => {
     // Enforce max files
     if (files.length + newFiles.length > maxFiles) {
-      setStatusMessage(`You can only upload up to ${maxFiles} files`)
-      setStatusType('error')
+      setLimitPopupMessage(`You can only upload up to ${maxFiles} files.`)
+      setShowLimitPopup(true)
       return
     }
 
@@ -105,6 +105,9 @@ export function FileUploader({
         .some(mt => (file.type || '').toLowerCase() === mt.toLowerCase())
       return extOk || typeOk
     }
+
+    // Debug: Log file info
+    console.log('Selected files:', newFiles.map(f => ({ name: f.name, size: f.size, type: f.type })))
 
     const validFiles = newFiles.filter(file => {
       const isValidType = isAccepted(file)
@@ -148,6 +151,8 @@ export function FileUploader({
 
     // Upload to backend
     fileItems.forEach((fileItem, index) => {
+      // Debug: Log file before upload
+      console.log('Uploading file:', validFiles[index])
       uploadFile(fileItem.id, validFiles[index])
     })
 
@@ -157,10 +162,15 @@ export function FileUploader({
   const uploadFile = async (fileId: string, file: File) => {
     const formData = new FormData()
     formData.append('file', file)
+    
     try {
+      // Show summarizing indicator
       onSummarizingChange?.(true)
+      
+      // Upload file to backend
       const res = await api.post('/upload/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        // Don't set Content-Type manually; the browser adds the correct multipart boundary.
+        timeout: 120000,
         onUploadProgress: (e) => {
           const total = e.total || file.size
           const progress = total ? Math.round((e.loaded * 100) / total) : 0
@@ -169,52 +179,32 @@ export function FileUploader({
           ))
         }
       })
+      
       const docType = (res?.data?.doc_type as string | undefined) || undefined
-      // If backend classifies the document but it's not one of the allowed
-      // types (nid, tin, salary), reject it client-side and show an error.
-      const allowed = ['nid', 'tin', 'salary']
-      if (docType && !allowed.includes(docType)) {
-        setFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, status: 'error', progress: 100, docType }
-            : f
-        ))
-        setStatusMessage('Only Nation ID, TIN Certificate and Salary Certificate are allowed.')
-        setStatusType('error')
-        onDocumentClassified?.(null)
-        onSummarizingChange?.(false)
-        return
-      }
 
+      // Mark file as successfully uploaded
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { ...f, status: 'success', progress: 100, docType }
           : f
       ))
-      // Do not show a success banner; keep the card height stable.
+      
       setStatusMessage('')
       setStatusType('info')
-      if (docType) {
-        // Notify parent about the classified document and show
-        // profile-update confirmation for NID/TIN.
+      
+      // Update document type status (triggers green tick in workspace)
+      if (docType && docType !== 'unknown') {
         onDocumentClassified?.(docType)
-        if (docType === 'nid' || docType === 'tin') {
-          setProfileUpdateDocType(docType)
-          setShowProfileUpdatePopup(true)
-        }
-      } else {
-        onDocumentClassified?.(null)
       }
-      // Notify parent so chat history can refresh
-      // and show the new document summary.
+      
+      // Trigger chat history reload (shows summary immediately)
       onUploadComplete?.()
+      
     } catch (err: any) {
-      // Keep UI quiet on server errors – no red banner
       const code = err?.response?.status
       const detail = err?.response?.data?.detail || 'Failed to upload'
 
-      // For "Complete profile with NID and TIN" we only show the
-      // blue popup (no red inline "Failed to upload" banner).
+      // Show profile completion popup for 400 errors
       if (code === 400 && typeof detail === 'string' && detail.includes('Complete profile')) {
         setPopupMessage(detail)
         setShowPopup(true)
@@ -222,12 +212,14 @@ export function FileUploader({
         console.error('Upload failed:', detail)
       }
 
+      // Mark file as failed
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { ...f, status: 'error' }
           : f
       ))
     } finally {
+      // Hide summarizing indicator
       onSummarizingChange?.(false)
     }
   }
@@ -298,52 +290,53 @@ export function FileUploader({
 
     </div>
 
-    {/* Blue, centered modal popup for profile completion */}
+    {/* Profile-completion popup for when backend rejects uploads
+        because the user profile is incomplete. */}
     <Modal
       open={showPopup}
       title="Complete your profile"
       onClose={() => setShowPopup(false)}
       actions={
         <>
-          <Button variant="ghost" className="text-white/90" onClick={() => setShowPopup(false)}>Close</Button>
-        </>
-      }
-    >
-      {/* No body text per request */}
-    </Modal>
-    
-    {/* Popup telling user that profile data (NID/TIN) was updated from document */}
-    <Modal
-      open={showProfileUpdatePopup}
-      title="Update profile from document"
-      onClose={() => setShowProfileUpdatePopup(false)}
-      actions={
-        <>
           <Button
             variant="ghost"
             className="text-white/90"
-            onClick={() => setShowProfileUpdatePopup(false)}
+            onClick={() => setShowPopup(false)}
           >
-            Cancel
+            Close
           </Button>
           <Button
             className="bg-white text-blue-900 hover:opacity-95"
-            onClick={() => setShowProfileUpdatePopup(false)}
+            onClick={() => setShowPopup(false)}
+            asChild
           >
-            Agree & Continue
+            <Link href="/profile">Edit profile</Link>
           </Button>
         </>
       }
     >
       <p className="text-sm text-white/90 mb-2">
-        We have extracted your {profileUpdateDocType === 'tin' ? 'TIN' : 'NID'} information from the uploaded
-        document. By continuing, you confirm that this information is correct and agree that we may
-        update your profile automatically to prepare your tax return.
-      </p>
-      <p className="text-xs text-white/70">
-        You can review or change these details any time from the Profile page.
+        {popupMessage ||
+          'Please complete your profile.'}
       </p>
     </Modal>
+
+    {/* Popup for upload limit exceeded */}
+    <Modal
+      open={showLimitPopup}
+      title="Upload limit"
+      onClose={() => setShowLimitPopup(false)}
+      actions={[
+        <Button key="ok" onClick={() => setShowLimitPopup(false)}>
+          OK
+        </Button>,
+      ]}
+    >
+      <p className="text-sm text-gray-700 dark:text-gray-200">
+        {limitPopupMessage}
+      </p>
+    </Modal>
+    
     </>
   )
 }

@@ -29,12 +29,21 @@ from app.services.summary import (
 
 router = APIRouter(prefix="/upload", tags=["Upload Documents"])
 
+
+def _is_profile_complete(user: User) -> bool:
+    if user.date_of_birth is None:
+        return False
+    required_fields = [user.phone, user.address, user.occupation, user.nid, user.tin]
+    return all(field is not None and str(field).strip() for field in required_fields)
+
+
 @router.post("/")
 async def upload_document(
     file: UploadFile = File(...),
     authorization: Optional[str] | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ):
+    # Authentication
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
     try:
@@ -43,18 +52,48 @@ async def upload_document(
         user_id = int(payload.get("sub"))
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid Authorization token")
+
+    # Get user session and profile
     session = await get_or_create_active_session(db, user_id)
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if not user or not (user.nid and user.tin):
-        raise HTTPException(status_code=400, detail="Complete profile with NID and TIN")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Validate profile completeness (required for all document types)
+    if not _is_profile_complete(user):
+        raise HTTPException(
+            status_code=400,
+            detail="Complete profile before uploading documents",
+        )
+
+    # File validation
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Max 5 MB")
-    existing = await db.execute(select(UploadedDocument).where(UploadedDocument.session_id == session.id))
+
+    existing = await db.execute(
+        select(UploadedDocument).where(UploadedDocument.session_id == session.id)
+    )
     docs = existing.scalars().all()
     if len(docs) >= 10:
         raise HTTPException(status_code=400, detail="Upload limit reached")
+
+    # Extract and classify document
+    extracted_text = ""
+    doc_type: DocType = DocType.UNKNOWN
+    try:
+        extracted_text = await extract_text(
+            filename=file.filename,
+            mime_type=file.content_type,
+            content=content,
+        )
+        doc_type = await identify_document_type(extracted_text)
+    except Exception:
+        extracted_text = ""
+        doc_type = DocType.UNKNOWN
+
+    # Persist document to database
     doc = UploadedDocument(
         session_id=session.id,
         filename=file.filename,
@@ -65,15 +104,10 @@ async def upload_document(
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
+
+    # Extract structured data and generate summary
     summary = None
-    doc_type: DocType = DocType.UNKNOWN
     try:
-        extracted_text = await extract_text(
-            filename=file.filename,
-            mime_type=file.content_type,
-            content=content,
-        )
-        doc_type = await identify_document_type(extracted_text)
         if doc_type != DocType.UNKNOWN:
             structured = await extract_structured_data(extracted_text, doc_type)
             if structured:
@@ -84,9 +118,11 @@ async def upload_document(
                     doc_type=doc_type,
                     data=structured,
                 )
+
         summary = await summarize(filename=file.filename or "document", text=extracted_text)
         if doc_type == DocType.UNKNOWN and not summary:
             summary = "- Title: <short>\n- Overview: 4-5 sentences maximum\n"
+        
         if summary:
             await persist_message(
                 db,
@@ -111,11 +147,7 @@ async def get_upload_status(
     authorization: Optional[str] | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ):
-    """Return which structured document types exist for the user's active session.
 
-    This is used by the frontend to restore the reviewed-documents ticks
-    after page refresh or backend restart.
-    """
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
 
