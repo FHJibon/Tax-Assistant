@@ -38,7 +38,6 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
         return False
     return user
 
-    
 async def start_signup(name: str, email: str, password: str) -> None:
     hashed = await hash_pw(password)
     code = await send_otp(email, "signup")

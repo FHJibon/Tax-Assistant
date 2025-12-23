@@ -267,7 +267,7 @@ export default function WorkspacePage() {
                     <p className="text-sm text-center text-gray-100">
                               {language === 'bn'
                                 ? 'আপনি সম্মত যে প্রদত্ত তথ্যের ভিত্তিতে আপনার ট্যাক্স রিটার্ন তৈরি করা হবে এবং এটি শুধুমাত্র ডকুমেন্টেশন ও পরামর্শের জন্য ব্যবহৃত হবে।'
-                                : 'By continuing, you agree that your tax return will be generated based on the uploaded documents.'}
+                                : 'By continuing, your tax return will be generated based on the uploaded documents'}
                     </p>
                     <div className="mt-6 flex gap-3 justify-between">
                       <Button

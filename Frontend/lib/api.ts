@@ -112,8 +112,10 @@ export const taxAPI = {
     api.post('/chat/', { message, top_k: topK }, { timeout: timeoutMs }),
   getHistory: () => api.get('/chat/history'),
   terminateSession: () => api.post('/chat/terminate'),
-  generateTaxReturn: () =>
-    api.get('/generate/tax-return', { responseType: 'blob' }),
+  generateTaxReturn: (timeoutMs: number = 60000) =>
+    api.get('/generate/tax-return', { responseType: 'blob', timeout: timeoutMs }),
+  generateTaxReturnFromForm: (payload: any, timeoutMs: number = 60000) =>
+    api.post('/generate/tax-return', payload, { responseType: 'blob', timeout: timeoutMs }),
 }
 
 export const uploadAPI = {

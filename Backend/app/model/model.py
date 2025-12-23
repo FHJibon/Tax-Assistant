@@ -5,6 +5,25 @@ import uuid
 
 Base = declarative_base()
 
+
+class GeneratedFile(Base):
+    __tablename__ = "1 Files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # Keep a simple reference to the user; no cascade delete so
+    # records are not removed when the user is terminated.
+    user_id = Column(Integer, index=True, nullable=False)
+    user_name = Column(String(50), nullable=False)
+    filename = Column(String, nullable=False)
+    # Optional metadata/content for storing the generated PDF in DB.
+    # Marked nullable=True to remain compatible with older DB schemas.
+    session_id = Column(String, nullable=True, index=True)
+    mime_type = Column(String, nullable=True)
+    size = Column(Integer, nullable=True)
+    content = Column(LargeBinary, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class User(Base):
     __tablename__ = "10. User"
 

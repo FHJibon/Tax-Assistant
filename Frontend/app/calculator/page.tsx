@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { taxAPI } from '@/lib/api'
 import { 
   Calculator as CalculatorIcon,
   DollarSign,
@@ -30,6 +31,9 @@ export default function CalculatorPage() {
     taxableIncome: number
     totalTax: number
   } | null>(null)
+
+  const [isPdfGenerating, setIsPdfGenerating] = React.useState(false)
+  const [pdfError, setPdfError] = React.useState<string | null>(null)
 
   // Exemption map used both in UI and calculation
   const EXEMPTION_MAP: Record<'general' | 'women_senior' | 'disabled', number> = {
@@ -81,6 +85,43 @@ export default function CalculatorPage() {
   const resetCalculator = () => {
     setIncome({ monthlySalary: '', category: 'general' })
     setResult(null)
+    setPdfError(null)
+  }
+
+  const generateTaxReturnPdf = async () => {
+    try {
+      setIsPdfGenerating(true)
+      setPdfError(null)
+
+      const monthlySalary = Number(income.monthlySalary || 0)
+      const annualSalary = monthlySalary * 12
+
+      const payload = {
+        taxpayer_category: income.category,
+        // Minimal mapping: treat annual salary as "basic pay"; others default to 0.
+        sal_basic: annualSalary,
+        sal_rent: 0,
+        sal_medical: 0,
+        sal_conveyance: 0,
+        sal_festival: 0,
+      }
+
+      const response = await taxAPI.generateTaxReturnFromForm(payload, 60000)
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'tax_return.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail
+      setPdfError(typeof detail === 'string' ? detail : 'Failed to generate PDF')
+    } finally {
+      setIsPdfGenerating(false)
+    }
   }
 
   return (
@@ -191,11 +232,28 @@ export default function CalculatorPage() {
                 <CalculatorIcon className="h-4 w-4 mr-2" />
                 {language === 'bn' ? 'কর গণনা করুন' : 'Calculate Tax'}
               </Button>
+              <Button
+                onClick={generateTaxReturnPdf}
+                size="lg"
+                variant="secondary"
+                disabled={isPdfGenerating}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isPdfGenerating
+                  ? (language === 'bn' ? 'পিডিএফ তৈরি হচ্ছে...' : 'Generating PDF...')
+                  : (language === 'bn' ? 'পিডিএফ ডাউনলোড' : 'Download PDF')}
+              </Button>
               <Button onClick={resetCalculator} variant="outline" size="lg">
                 <RotateCcw className="h-4 w-4 mr-2" />
                 {language === 'bn' ? 'রিসেট' : 'Reset'}
               </Button>
             </div>
+
+            {pdfError && (
+              <div className="text-sm rounded-md px-3 py-2 bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300">
+                {pdfError}
+              </div>
+            )}
           </div>
 
           {/* Results Section */}

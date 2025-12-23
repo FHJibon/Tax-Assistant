@@ -12,20 +12,17 @@
         line-height: 1.3;
         margin: 0;
         padding: 0;
-        background-color: #525659;
+        background-color: #ffffff;
         -webkit-print-color-adjust: exact;
     }
 
     .page {
         width: 210mm;
-        height: 297mm;
         background: white;
         margin: 20px auto;
-        padding: 15mm 15mm;
+        padding: 15mm 15mm 6mm 15mm;
         position: relative;
-        overflow: hidden;
         page-break-after: always;
-        box-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
 
     .page-1, .page-10 {
@@ -39,7 +36,6 @@
             margin: 0;
             border: none;
             width: 210mm;
-            height: 297mm;
             box-shadow: none;
             page-break-after: always;
         }
@@ -60,6 +56,9 @@
         border: 1px solid #000;
         margin: 0 5px;
         vertical-align: text-bottom;
+        text-align: center;
+        line-height: 14px;
+        font-size: 12px;
     }
 
     .input-dashed {
@@ -185,7 +184,7 @@
 
     .footer-num {
         position: absolute;
-        bottom: 10mm;
+        bottom: 1mm;
         width: 100%;
         left: 0;
         text-align: center;
@@ -205,8 +204,13 @@
         margin-bottom: 10px;
     }
 
-    .instruction-box { border: 2px solid #000; padding: 10px; min-height: 800px; }
+    .instruction-box { border: 2px solid #000; padding: 12px; }
+    .box-header { font-weight: bold; margin-bottom: 8px; }
     .list-table td { border: none; vertical-align: top; padding-bottom: 8px; }
+    .col-num { width: 55px; vertical-align: top; white-space: nowrap; }
+    .subitem { padding-left: 18px; }
+    .subrow { margin-top: 4px; }
+    .subrow:first-child { margin-top: 6px; }
 
 </style>
 </head>
@@ -233,33 +237,33 @@
     <div style="font-size: 11.5pt;">
         <div class="p1-row">
             <span class="p1-label">1. Name:</span>
-            <span class="input-line"></span>
+            <span class="input-line">{{ c.name or '' }}</span>
         </div>
 
         <div class="p1-row">
             <span class="p1-label">2. National ID No. / Passport No. (If No NID):</span>
-            <span class="input-line"></span>
+            <span class="input-line">{{ c.nid or '' }}</span>
         </div>
 
         <div class="p1-row" style="align-items: center;">
             <span class="p1-label">3. TIN:</span>
             <div style="margin-left: 20px;">
-                <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+                <span class="char-box">{{ c.tin_chars[0] }}</span><span class="char-box">{{ c.tin_chars[1] }}</span><span class="char-box">{{ c.tin_chars[2] }}</span><span class="char-box">{{ c.tin_chars[3] }}</span>
                 <span class="spacer">-</span>
-                <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+                <span class="char-box">{{ c.tin_chars[4] }}</span><span class="char-box">{{ c.tin_chars[5] }}</span><span class="char-box">{{ c.tin_chars[6] }}</span><span class="char-box">{{ c.tin_chars[7] }}</span><span class="char-box">{{ c.tin_chars[8] }}</span>
                 <span class="spacer">-</span>
-                <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+                <span class="char-box">{{ c.tin_chars[9] }}</span><span class="char-box">{{ c.tin_chars[10] }}</span><span class="char-box">{{ c.tin_chars[11] }}</span><span class="char-box"></span>
             </div>
         </div>
 
         <div class="p1-row">
             <div class="p1-col" style="width: 50%; padding-right: 10px;">
                 <span class="p1-label">4. (a) Circle:</span>
-                <span class="input-line"></span>
+                <span class="input-line">{{ c.circle or '' }}</span>
             </div>
             <div class="p1-col" style="width: 50%; padding-left: 10px;">
                 <span class="p1-label">(b) Taxes Zone:</span>
-                <span class="input-line"></span>
+                <span class="input-line">{{ c.zone or '' }}</span>
             </div>
         </div>
 
@@ -269,39 +273,39 @@
                 <span class="input-line"></span>
             </div>
             <div style="width: 60%; text-align: right;">
-                6. Residential Status: Resident <span class="box-check"></span> / Non-resident <span class="box-check"></span>
+                6. Residential Status: Resident <span class="box-check">{% if c.tick_resident %}✓{% endif %}</span> / Non-resident <span class="box-check">{% if c.tick_non_resident %}✓{% endif %}</span>
             </div>
         </div>
 
         <div class="p1-row">
             7. Taxpayer’s Status: &nbsp; 
-            Individual <span class="box-check"></span> &nbsp; 
-            Firm <span class="box-check"></span> &nbsp; 
-            Hindu Undivided Family <span class="box-check"></span> &nbsp; 
-            Others <span class="box-check"></span>
+            Individual <span class="box-check">{% if c.tick_individual %}✓{% endif %}</span> &nbsp; 
+            Firm <span class="box-check">{% if c.tick_firm %}✓{% endif %}</span> &nbsp; 
+            Hindu Undivided Family <span class="box-check">{% if c.tick_huf %}✓{% endif %}</span> &nbsp; 
+            Others <span class="box-check">{% if c.tick_others %}✓{% endif %}</span>
         </div>
 
         <div style="margin-bottom: 5px;">
             8. Tick on the box for getting special benefit:
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <div><span class="box-check"></span> A gazette war-wounded freedom fighter</div>
-            <div><span class="box-check"></span> Female</div>
-            <div><span class="box-check"></span> Third gender</div>
+            <div><span class="box-check">{% if c.tick_war_wounded_ff %}✓{% endif %}</span> A gazette war-wounded freedom fighter</div>
+            <div><span class="box-check">{% if c.tick_female %}✓{% endif %}</span> Female</div>
+            <div><span class="box-check">{% if c.tick_third_gender %}✓{% endif %}</span> Third gender</div>
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-            <div><span class="box-check"></span> Disable person</div>
-            <div><span class="box-check"></span> Aged 65 years or more</div>
-            <div><span class="box-check"></span> A parent of a person with disability</div>
+            <div><span class="box-check">{% if c.tick_disabled %}✓{% endif %}</span> Disable person</div>
+            <div><span class="box-check">{% if c.tick_senior %}✓{% endif %}</span> Aged 65 years or more</div>
+            <div><span class="box-check">{% if c.tick_parent_of_disabled %}✓{% endif %}</span> A parent of a person with disability</div>
         </div>
 
         <div style="margin-bottom: 5px;">9. Date of Birth (DD MM YYYY)</div>
         <div style="margin-bottom: 12px;">
-            <span class="char-box"></span><span class="char-box"></span>
+            <span class="char-box">{{ c.dob_day[0] }}</span><span class="char-box">{{ c.dob_day[1] }}</span>
             <span class="spacer"></span>
-            <span class="char-box"></span><span class="char-box"></span>
+            <span class="char-box">{{ c.dob_month[0] }}</span><span class="char-box">{{ c.dob_month[1] }}</span>
             <span class="spacer"></span>
-            <span class="char-box"></span><span class="char-box"></span><span class="char-box"></span><span class="char-box"></span>
+            <span class="char-box">{{ c.dob_year[0] }}</span><span class="char-box">{{ c.dob_year[1] }}</span><span class="char-box">{{ c.dob_year[2] }}</span><span class="char-box">{{ c.dob_year[3] }}</span>
         </div>
 
         <div class="p1-row">
@@ -315,29 +319,31 @@
 
         <div class="p1-row" style="margin-bottom: 5px;">
             <span class="p1-label">11. Address:</span>
-            <span class="input-line"></span>
+            <span class="input-line">{{ c.address or '' }}</span>
         </div>
         <div class="full-line"></div>
         
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; margin-bottom: 12px;">
             <div class="p1-col" style="width: 32%;">
                 <span class="p1-label">Telephone:</span>
-                <span class="input-line"></span>
+                <span class="input-line">{{ c.phone or '' }}</span>
             </div>
             <div class="p1-col" style="width: 32%;">
                 <span class="p1-label">Mobile:</span>
-                <span class="input-line"></span>
+                <span class="input-line">{{ c.phone or '' }}</span>
             </div>
             <div class="p1-col" style="width: 32%;">
                 <span class="p1-label">e-mail:</span>
-                <span class="input-line"></span>
+                <span class="input-line">{{ c.email or '' }}</span>
             </div>
         </div>
 
         <div style="margin-bottom: 5px;">
             12. If employed, employer’s name (latest employer’s name in case of multiple employment):
         </div>
-        <div class="full-line"></div>
+        <div class="full-line" style="display: flex; align-items: flex-end; padding-bottom: 2px;">
+            <span style="font-size: 10.5pt;">{{ c.employer or '' }}</span>
+        </div>
         <div class="full-line" style="margin-bottom: 12px;"></div>
 
         <div class="p1-row">
@@ -366,14 +372,14 @@
     
     <div style="display: flex; align-items: baseline; margin-bottom: 15px;">
         <span style="font-weight: bold; margin-right: 5px;">Name:</span>
-        <span class="input-dotted" style="flex-grow: 1; margin-right: 20px;"></span>
+        <span class="input-dotted" style="flex-grow: 1; margin-right: 20px;">{{ c.name or '' }}</span>
         
         <div style="display: inline-flex; align-items: center;">
             <span style="font-weight: bold; margin-right: 5px;">TIN:</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -386,17 +392,17 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>1. Income from Employment (annex Schedule 1)</td><td></td></tr>
+            <tr><td>1. Income from Employment (annex Schedule 1)</td><td>{{ '%.0f' % (c.employment_taxable or 0) }}</td></tr>
             <tr><td>2. Income from Rent (annex Schedule 2)</td><td></td></tr>
             <tr><td>3. Income from Agriculture (annex Schedule 3)</td><td></td></tr>
             <tr><td>4. Income from Business (annex Schedule 4)</td><td></td></tr>
             <tr><td>5. Income from Capital Gain</td><td></td></tr>
-            <tr><td>6. Income from Financial Assets<br>(Bank Interest, Dividend, Securities Profit etc)</td><td></td></tr>
+            <tr><td>6. Income from Financial Assets<br>(Bank Interest, Dividend, Securities Profit etc)</td><td>{{ '%.0f' % (c.bank_interest or 0) }}</td></tr>
             <tr><td>7. Income from Other Sources<br>(Royalty, License Fees, Honorarium, Govt. Incentive etc.)</td><td></td></tr>
             <tr><td>8. Share of Income from Firm or AoP</td><td></td></tr>
             <tr><td>9. Income of Minor or Spouse (if not Taxpayer)</td><td></td></tr>
             <tr><td>10. Taxable Income from Abroad</td><td></td></tr>
-            <tr><td><strong>11. Total Income (Aggregate of Serial 1 to 10)</strong></td><td></td></tr>
+            <tr><td><strong>11. Total Income (Aggregate of Serial 1 to 10)</strong></td><td>{{ '%.0f' % (c.total_income or 0) }}</td></tr>
         </tbody>
     </table>
 
@@ -410,15 +416,15 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>12. Gross Tax on Taxable Income</td><td></td></tr>
-            <tr><td>13. Tax Rebate (annex Schedule 5)</td><td></td></tr>
-            <tr><td>14. Net Tax after Rebate (12 &ndash; 13)</td><td></td></tr>
-            <tr><td>15. Minimum Tax</td><td></td></tr>
-            <tr><td>16. Tax Payable (Higher of 14 and 15)</td><td></td></tr>
-            <tr><td>17. (a) Net Wealth Surcharge (if applicable)</td><td></td></tr>
-            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(b) Environmental Surcharge (if applicable)</td><td></td></tr>
+            <tr><td>12. Gross Tax on Taxable Income</td><td>{{ '%.0f' % (c.gross_tax or 0) }}</td></tr>
+            <tr><td>13. Tax Rebate (annex Schedule 5)</td><td>{{ '%.0f' % (c.tax_rebate or 0) }}</td></tr>
+            <tr><td>14. Net Tax after Rebate (12 &ndash; 13)</td><td>{{ '%.0f' % (c.net_tax or 0) }}</td></tr>
+            <tr><td>15. Minimum Tax</td><td>{{ '%.0f' % (c.minimum_tax or 0) }}</td></tr>
+            <tr><td>16. Tax Payable (Higher of 14 and 15)</td><td>{{ '%.0f' % (c.tax_payable or 0) }}</td></tr>
+            <tr><td>17. (a) Net Wealth Surcharge (if applicable)</td><td>{{ '%.0f' % (c.net_wealth_surcharge or 0) }}</td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(b) Environmental Surcharge (if applicable)</td><td>{{ '%.0f' % (c.environmental_surcharge or 0) }}</td></tr>
             <tr><td>18. Delay Interest, Penalty or any other amount<br>Under Income Tax Act (if any)</td><td></td></tr>
-            <tr><td><strong>19. Total Amount Payable (16 + 17 + 18)</strong></td><td></td></tr>
+            <tr><td><strong>19. Total Amount Payable (16 + 17 + 18)</strong></td><td>{{ '%.0f' % (c.total_amount_payable or 0) }}</td></tr>
         </tbody>
     </table>
     <div class="footer-num">2</div>
@@ -450,8 +456,8 @@
         <h3 class="center" style="text-decoration: underline; margin-bottom: 15px;">Verification</h3>
         
         <div style="font-size: 11.5pt; line-height: 1.8; text-align: justify;">
-            I <span class="input-dotted" style="width: 260px; vertical-align: baseline;"></span> father / husband <span class="input-dotted" style="width: 280px; vertical-align: baseline;"></span><br>
-            TIN: <span class="input-dotted" style="width: 220px; vertical-align: baseline;"></span> Solemnly declare that to the best of my knowledge and belief the information given in this return and statements and documents annexed herewith is correct and complete.
+            I <span class="input-dotted" style="width: 260px; vertical-align: baseline;">{{ c.name or '' }}</span> father / husband <span class="input-dotted" style="width: 280px; vertical-align: baseline;"></span><br>
+            TIN: <span class="input-dotted" style="width: 220px; vertical-align: baseline;">{{ c.tin or '' }}</span> Solemnly declare that to the best of my knowledge and belief the information given in this return and statements and documents annexed herewith is correct and complete.
         </div>
         
         <div class="flex-row" style="margin-top: 50px;">
@@ -479,14 +485,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
         <div style="display: flex; align-items: flex-end;">
             <span>Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -501,13 +507,13 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>1. Basic pay</td><td></td><td></td><td></td></tr>
+            <tr><td>1. Basic pay</td><td>{{ '%.0f' % (c.sal_basic or 0) }}</td><td>{{ '%.0f' % (c.sal_basic_exempt or 0) }}</td><td>{{ '%.0f' % (c.sal_basic_taxable or 0) }}</td></tr>
             <tr><td>2. Arrear Pay (if not included in taxable income earlier)</td><td></td><td></td><td></td></tr>
             <tr><td>3. Special allowance</td><td></td><td></td><td></td></tr>
-            <tr><td>4. House Rent allowance</td><td></td><td></td><td></td></tr>
-            <tr><td>5. Medical allowance</td><td></td><td></td><td></td></tr>
-            <tr><td>6. Conveyance allowance</td><td></td><td></td><td></td></tr>
-            <tr><td>7. Festival allowance</td><td></td><td></td><td></td></tr>
+            <tr><td>4. House Rent allowance</td><td>{{ '%.0f' % (c.sal_rent or 0) }}</td><td>{{ '%.0f' % (c.sal_rent_exempt or 0) }}</td><td>{{ '%.0f' % (c.sal_rent_taxable or 0) }}</td></tr>
+            <tr><td>5. Medical allowance</td><td>{{ '%.0f' % (c.sal_medical or 0) }}</td><td>{{ '%.0f' % (c.sal_medical_exempt or 0) }}</td><td>{{ '%.0f' % (c.sal_medical_taxable or 0) }}</td></tr>
+            <tr><td>6. Conveyance allowance</td><td>{{ '%.0f' % (c.sal_conveyance or 0) }}</td><td>{{ '%.0f' % (c.sal_conveyance_exempt or 0) }}</td><td>{{ '%.0f' % (c.sal_conveyance_taxable or 0) }}</td></tr>
+            <tr><td>7. Festival allowance</td><td>{{ '%.0f' % (c.sal_festival or 0) }}</td><td>{{ '%.0f' % (c.sal_festival_exempt or 0) }}</td><td>{{ '%.0f' % (c.sal_festival_taxable or 0) }}</td></tr>
             <tr><td>8. Support Staff allowance</td><td></td><td></td><td></td></tr>
             <tr><td>9. Leave allowance</td><td></td><td></td><td></td></tr>
             <tr><td>10. Honorarium / Reward</td><td></td><td></td><td></td></tr>
@@ -517,7 +523,7 @@
             <tr><td>14. Lump Grant</td><td></td><td></td><td></td></tr>
             <tr><td>15. Gratuity</td><td></td><td></td><td></td></tr>
             <tr><td>16. Others, if any (provide detail)</td><td></td><td></td><td></td></tr>
-            <tr><td>17. Total</td><td></td><td></td><td></td></tr>
+            <tr><td>17. Total</td><td>{{ '%.0f' % (c.sal_total or 0) }}</td><td>{{ '%.0f' % (c.employment_exempt or 0) }}</td><td>{{ '%.0f' % (c.employment_taxable or 0) }}</td></tr>
         </tbody>
     </table>
 
@@ -526,14 +532,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
         <div style="display: flex; align-items: flex-end;">
             <span>Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -547,8 +553,8 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>1. Basic pay</td><td></td><td></td></tr>
-            <tr><td>2. Allowances</td><td></td><td></td></tr>
+            <tr><td>1. Basic pay</td><td>{{ '%.0f' % (c.sal_basic or 0) }}</td><td></td></tr>
+            <tr><td>2. Allowances</td><td>{{ '%.0f' % ((c.sal_rent or 0) + (c.sal_medical or 0) + (c.sal_conveyance or 0) + (c.sal_festival or 0)) }}</td><td></td></tr>
             <tr><td>3. Advance / Arrear Salary</td><td></td><td></td></tr>
             <tr><td>4. Gratuity, Annuity, Pension or similar benefit</td><td></td><td></td></tr>
             <tr><td>5. Perquisites</td><td></td><td></td></tr>
@@ -559,9 +565,9 @@
             <tr><td>10. Any other Facility provided by Employer</td><td></td><td></td></tr>
             <tr><td>11. Employer’s Contribution to Recognized Provident Fund</td><td></td><td></td></tr>
             <tr><td>12. Others, if any (provide detail)</td><td></td><td></td></tr>
-            <tr><td>13. Total Salary Received (aggregate of 1 to 12)</td><td></td><td></td></tr>
-            <tr><td>14. Exempted Amount (as per Part 1 of 6<sup>th</sup> Schedule)</td><td></td><td></td></tr>
-            <tr><td>15. Total Income from Salary (13 – 14)</td><td></td><td></td></tr>
+            <tr><td>13. Total Salary Received (aggregate of 1 to 12)</td><td>{{ '%.0f' % (c.sal_total or 0) }}</td><td></td></tr>
+            <tr><td>14. Exempted Amount (as per Part 1 of 6<sup>th</sup> Schedule)</td><td>{{ '%.0f' % (c.employment_exempt or 0) }}</td><td></td></tr>
+            <tr><td>15. Total Income from Salary (13 – 14)</td><td>{{ '%.0f' % (c.employment_taxable or 0) }}</td><td></td></tr>
         </tbody>
     </table>
     <div class="footer-num">4</div>
@@ -574,14 +580,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
         <div style="display: flex; align-items: flex-end;">
             <span>Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -681,14 +687,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
         <div style="display: flex; align-items: flex-end;">
             <span>Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -721,14 +727,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
         <div style="display: flex; align-items: flex-end;">
             <span>Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -794,14 +800,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
         <div style="display: flex; align-items: flex-end;">
             <span>Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -815,9 +821,9 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>1. Life Insurance Premium or Contractual Deferred Annuity Paid in Bangladesh</td><td></td></tr>
-            <tr><td>2. Contribution to Deposit Pension Scheme</td><td></td></tr>
-            <tr><td>3. Investment in Government Securities, Unit Certificate, Mutual Fund, ETF or Joint Investment Scheme Unit Certificate</td><td></td></tr>
+            <tr><td>1. Life Insurance Premium or Contractual Deferred Annuity Paid in Bangladesh</td><td>{{ '%.0f' % (c.inv_life or 0) }}</td></tr>
+            <tr><td>2. Contribution to Deposit Pension Scheme</td><td>{{ '%.0f' % (c.inv_dps or 0) }}</td></tr>
+            <tr><td>3. Investment in Government Securities, Unit Certificate, Mutual Fund, ETF or Joint Investment Scheme Unit Certificate</td><td>{{ '%.0f' % (c.inv_sanchay or 0) }}</td></tr>
             <tr><td>4. Investment in Securities listed with Approved Stock Exchange</td><td></td></tr>
             <tr><td>5. Contribution to Provident Fund to which Provident Fund Act, 1925 applies</td><td></td></tr>
             <tr><td>6. Self & Employer’s Contribution to Recognized Provident Fund</td><td></td></tr>
@@ -825,8 +831,8 @@
             <tr><td>8. Contribution to Benevolent Fund / Group Insurance Premium</td><td></td></tr>
             <tr><td>9. Contribution to Zakat Fund</td><td></td></tr>
             <tr><td>10. Others, if any (provide detail)</td><td></td></tr>
-            <tr><td>11. Total Investment (aggregate of 1 to 10)</td><td></td></tr>
-            <tr><td>12. Amount of Tax Rebate</td><td></td></tr>
+            <tr><td>11. Total Investment (aggregate of 1 to 10)</td><td>{{ '%.0f' % (c.inv_total or 0) }}</td></tr>
+            <tr><td>12. Amount of Tax Rebate</td><td>{{ '%.0f' % (c.tax_rebate or 0) }}</td></tr>
         </tbody>
     </table>
     <div class="footer-num">6</div>
@@ -839,14 +845,14 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="display: flex; align-items: flex-end;">
             <span class="bold">Name: </span>
-            <span class="input-dotted" style="width: 250px; margin-left: 5px;"></span>
+            <span class="input-dotted" style="width: 250px; margin-left: 5px;">{{ c.name or '' }}</span>
         </div>
         <div style="display: flex; align-items: center;">
             <span class="bold" style="margin-right: 5px;">TIN</span>
             <div class="tin-grid">
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-                <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+                <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+                <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
             </div>
         </div>
     </div>
@@ -900,12 +906,12 @@
 
     <div style="display: flex; align-items: flex-end; margin-bottom: 10px;">
         <span class="bold">Name: </span>
-        <span class="input-dotted" style="flex-grow: 1; margin: 0 5px;"></span>
+        <span class="input-dotted" style="flex-grow: 1; margin: 0 5px;">{{ c.name or '' }}</span>
         <span class="bold" style="margin-right: 5px;">TIN</span>
         <div class="tin-grid">
-            <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-            <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
-            <div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div><div class="tin-cell"></div>
+            <div class="tin-cell">{{ c.tin_chars[0] }}</div><div class="tin-cell">{{ c.tin_chars[1] }}</div><div class="tin-cell">{{ c.tin_chars[2] }}</div><div class="tin-cell">{{ c.tin_chars[3] }}</div>
+            <div class="tin-cell">{{ c.tin_chars[4] }}</div><div class="tin-cell">{{ c.tin_chars[5] }}</div><div class="tin-cell">{{ c.tin_chars[6] }}</div><div class="tin-cell">{{ c.tin_chars[7] }}</div>
+            <div class="tin-cell">{{ c.tin_chars[8] }}</div><div class="tin-cell">{{ c.tin_chars[9] }}</div><div class="tin-cell">{{ c.tin_chars[10] }}</div><div class="tin-cell">{{ c.tin_chars[11] }}</div>
         </div>
     </div>
 
@@ -1002,7 +1008,7 @@
             <tr><td>&nbsp;&nbsp;&nbsp;(j) Other Assets (Except Assets Mentioned in Sl. k)</td><td></td><td></td></tr>
             
             <tr><td>&nbsp;&nbsp;&nbsp;(k) Cash in Hand and Fund Outside Business</td><td></td><td></td></tr>
-            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) Bank Balance</td><td></td><td></td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) Bank Balance</td><td>{{ '%.0f' % (c.bank_balance or 0) }}</td><td></td></tr>
             <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ii) Cash in Hand</td><td></td><td></td></tr>
             <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iii) Others</td><td></td><td></td></tr>
             
@@ -1041,42 +1047,24 @@
             <tr>
                 <td class="col-num">(2)</td>
                 <td class="justify">
-                    <div style="margin-bottom: 2px; text-decoration: underline;">Enclose where applicable:</div>
-                    <table class="list-table">
-                        <tr>
-                            <td class="col-sub-num">(a)</td>
-                            <td class="justify">Salary statement for salary; Bank statement for interest; Certificate for interest on savings instruments; Rent agreement, receipts of municipal tax & land revenue, statement of house property loan interest, insurance premium for house property income; Statement of Professional income as per IT Rule-8; Copy of assessment/ income statement & balance sheet for partnership income; Documents of capital gain; Dividend warrant for dividend income; Statement of other income; Documents in support of investments in savings certificates, LIP, DPS, Zakat, stock/share etc.</td>
-                        </tr>
-                        <tr>
-                            <td class="col-sub-num">(b)</td>
-                            <td class="justify">Depreciation Chart claiming depreciation as per the Income Tax Act, 2023;</td>
-                        </tr>
-                        <tr>
-                            <td class="col-sub-num">(c)</td>
-                            <td class="justify">Computation of Income according to the Income Tax Act, 2023.</td>
-                        </tr>
-                    </table>
+                    <span style="text-decoration: underline;">Enclose where applicable:</span>
+                    <div class="subitem">
+                        <div class="subrow"><span>(a)</span> Salary statement for salary; Bank statement for interest; Certificate for interest on savings instruments; Rent agreement, receipts of municipal tax &amp; land revenue, statement of house property loan interest, insurance premium for house property income; Statement of Professional income as per IT Rule-8; Copy of assessment/ income statement &amp; balance sheet for partnership income; Documents of capital gain; Dividend warrant for dividend income; Statement of other income; Documents in support of investments in savings certificates, LIP, DPS, Zakat, stock/share etc.</div>
+                        <div class="subrow"><span>(b)</span> Depreciation Chart claiming depreciation as per the Income Tax Act, 2023;</div>
+                        <div class="subrow"><span>(c)</span> Computation of Income according to the Income Tax Act, 2023.</div>
+                    </div>
                 </td>
             </tr>
 
             <tr>
                 <td class="col-num">(3)</td>
                 <td class="justify">
-                    <div style="margin-bottom: 2px; text-decoration: underline;">Enclose Separate Statement for:</div>
-                    <table class="list-table">
-                        <tr>
-                            <td class="col-sub-num">(a)</td>
-                            <td class="justify">any income of the spouse of the Taxpayer (if she/he is not an Taxpayer), minor children and dependent;</td>
-                        </tr>
-                        <tr>
-                            <td class="col-sub-num">(b)</td>
-                            <td class="justify">Tax exempted / Tax free Income.</td>
-                        </tr>
-                        <tr>
-                            <td class="col-sub-num">(c)</td>
-                            <td class="justify">Income Exempted from Tax declared under Part 1 of the Sixth Schedule of the Income Tax Act, 2023.</td>
-                        </tr>
-                    </table>
+                    <span style="text-decoration: underline;">Enclose Separate Statement for:</span>
+                    <div class="subitem">
+                        <div class="subrow"><span>(a)</span> any income of the spouse of the Taxpayer (if she/he is not an Taxpayer), minor children and dependent;</div>
+                        <div class="subrow"><span>(b)</span> Tax exempted / Tax free Income.</div>
+                        <div class="subrow"><span>(c)</span> Income Exempted from Tax declared under Part 1 of the Sixth Schedule of the Income Tax Act, 2023.</div>
+                    </div>
                 </td>
             </tr>
 
@@ -1088,21 +1076,12 @@
             <tr>
                 <td class="col-num">(5)</td>
                 <td class="justify">
-                    <div style="margin-bottom: 2px; text-decoration: underline;">Furnish the following information:</div>
-                    <table class="list-table">
-                        <tr>
-                            <td class="col-sub-num">(a)</td>
-                            <td class="justify">Name, address & TIN of the partners if the Taxpayer is a firm;</td>
-                        </tr>
-                        <tr>
-                            <td class="col-sub-num">(b)</td>
-                            <td class="justify">Name of firm, address & TIN if the Taxpayer is a partner;</td>
-                        </tr>
-                        <tr>
-                            <td class="col-sub-num">(c)</td>
-                            <td class="justify">Name of the company, address & TIN if the Taxpayer is a director.</td>
-                        </tr>
-                    </table>
+                    <span style="text-decoration: underline;">Furnish the following information:</span>
+                    <div class="subitem">
+                        <div class="subrow"><span>(a)</span> Name, address &amp; TIN of the partners if the Taxpayer is a firm;</div>
+                        <div class="subrow"><span>(b)</span> Name of firm, address &amp; TIN if the Taxpayer is a partner;</div>
+                        <div class="subrow"><span>(c)</span> Name of the company, address &amp; TIN if the Taxpayer is a director.</div>
+                    </div>
                 </td>
             </tr>
 
@@ -1118,7 +1097,7 @@
 
             <tr>
                 <td class="col-num">(8)</td>
-                <td class="justify">For Individual Person, signature is also mandatory in IT-10B (2023) & IT-10BB (2023).</td>
+                <td class="justify">For Individual Person, signature is also mandatory in IT-10B (2023) &amp; IT-10BB (2023).</td>
             </tr>
 
             <tr>
