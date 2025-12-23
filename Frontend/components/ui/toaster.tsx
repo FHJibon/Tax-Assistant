@@ -30,23 +30,26 @@ export function ToasterProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToasterContext.Provider value={{ toast, toasts }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+      <div className="fixed bottom-6 right-6 z-50 space-y-3">
         {toasts.map(toast => (
           <div
             key={toast.id}
             className={`
-              max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden
-              ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}
+              max-w-sm w-full pointer-events-auto overflow-hidden rounded-2xl border shadow-lg backdrop-blur-xl
+              transition-all duration-300 transform animate-fade-in-up
+              ${toast.variant === 'destructive'
+                ? 'border-red-500/40 bg-gradient-to-br from-red-900/80 via-red-900/90 to-black/90 shadow-red-900/40'
+                : 'border-blue-500/30 bg-gradient-to-br from-gray-900/90 via-gray-900/95 to-black/95 shadow-blue-900/40'}
             `}
           >
             <div className="p-4">
               {toast.title && (
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-semibold tracking-wide text-white">
                   {toast.title}
                 </div>
               )}
               {toast.description && (
-                <div className="mt-1 text-sm text-gray-500">
+                <div className="mt-1 text-sm text-gray-300">
                   {toast.description}
                 </div>
               )}

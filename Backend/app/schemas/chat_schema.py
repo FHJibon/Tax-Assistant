@@ -18,11 +18,13 @@ class QueryResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     top_k: int = 10
+    voice_transcript: Optional[str] = None
 
 class ChatMessageRead(BaseModel):
     id: int
     role: str
     content: str
+    voice_transcript: Optional[str] = None
     created_at: Optional[str] = None
 
 class ChatHistoryResponse(BaseModel):

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/Navbar'
+import Footer from '@/components/Footer'
 import { 
   Calculator, 
   Bot, 
@@ -17,9 +18,7 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
-  Sparkles,
-  FileText,
-  Receipt
+  Sparkles
 } from 'lucide-react'
 
 export default function HomePage() {
@@ -69,14 +68,20 @@ export default function HomePage() {
       </div>
       <Navbar />
       <div className="relative pt-24">
-      
-      {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
           <div className="text-center">
             <div className="animate-fade-in-up">
               <div className="flex justify-center mb-6 animate-scale-in">
-                <Image src="/logo.svg" alt="Logo" width={64} height={64} className="h-16 w-16 rounded-xl shadow-lg hover:scale-110 transition-transform duration-300" />
+                <Image
+                  src="/logo.svg"
+                  alt="Logo"
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  priority
+                  className="h-16 w-16 rounded-xl shadow-lg hover:scale-110 transition-transform duration-300"
+                />
               </div>
               
               <h1 className={`text-4xl md:text-6xl font-black mb-6 animate-fade-in-up animation-delay-200 ${
@@ -112,33 +117,26 @@ export default function HomePage() {
           </div>
         </div>
         
-        {/* Enhanced Decorative elements - Optimized for mobile & desktop */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          {/* Circle 1 - Floating orbit animation */}
           <div className="absolute top-10 md:top-20 left-5 md:left-10 w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full opacity-20 blur-xl animate-float"></div>
             <div className="absolute inset-2 bg-gradient-to-br from-blue-300 to-cyan-300 rounded-full opacity-30 blur-md animate-float-delayed"></div>
           </div>
           
-          {/* Circle 2 - Reverse orbit */}
           <div className="absolute top-32 md:top-40 right-5 md:right-10 w-14 h-14 md:w-20 md:h-20 lg:w-28 lg:h-28">
             <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-400 rounded-full opacity-20 blur-xl animate-float-reverse"></div>
             <div className="absolute inset-2 bg-gradient-to-br from-green-300 to-emerald-300 rounded-full opacity-30 blur-md animate-float-reverse-delayed"></div>
           </div>
           
-          {/* Circle 3 - Subtle pulse with float */}
           <div className="absolute bottom-16 md:bottom-20 left-[15%] md:left-[20%] w-12 h-12 md:w-16 md:h-16 lg:w-24 lg:h-24">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full opacity-20 blur-xl animate-pulse-float"></div>
             <div className="absolute inset-2 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full opacity-30 blur-md animate-pulse-float-delayed"></div>
           </div>
           
-          {/* Additional ambient circles for depth - Desktop only */}
           <div className="hidden lg:block absolute top-1/2 right-1/4 w-20 h-20 bg-gradient-to-br from-indigo-400 to-blue-400 rounded-full opacity-10 blur-2xl animate-float-slow"></div>
           <div className="hidden lg:block absolute bottom-1/3 left-1/3 w-16 h-16 bg-gradient-to-br from-teal-400 to-green-400 rounded-full opacity-10 blur-2xl animate-float-reverse-slow"></div>
         </div>
       </section>
-
-      {/* Features Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -193,8 +191,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Benefits Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -265,8 +261,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* CTA Section - show once auth initialized. Show signup only when logged out; demo always visible */}
       {initialized && (
         <section className="py-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -308,15 +302,11 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Footer moved to RootLayout (conditionally hidden on /workspace) */}
-
-      {/* Floating Calculator Bubble - Enhanced */}
+      <Footer />
       <Link href="/calculator" aria-label="Open Tax Calculator" title={language === 'bn' ? 'ক্যালকুলেটর' : 'Calculator'}>
         <div className="fixed bottom-6 right-6 z-50 animate-fade-in-scale">
           <div className="relative group">
-            {/* Animated ring */}
             <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping"></div>
-            {/* Main button */}
             <div className="relative h-14 w-14 rounded-full bg-gradient-to-br from-primary to-blue-600 shadow-2xl flex items-center justify-center text-white hover:scale-110 hover:rotate-12 transition-all duration-300 ring-2 ring-primary/25 hover:ring-4 hover:ring-primary/40">
               <span className="sr-only">{language === 'bn' ? 'ক্যালকুলেটর খুলুন' : 'Open Calculator'}</span>
               <Calculator className="h-6 w-6 group-hover:scale-110 transition-transform" />

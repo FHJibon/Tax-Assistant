@@ -56,9 +56,8 @@ async def summarize(
     prompt = (
         f"File: {filename}\n"
         "You are given a document."
-        "Output format (Markdown file):"
-        "-Title: <short>"
-        "-Overview: 4-5 sentences maximum"
+        "Provide a concise summary with bullet points.\n"
+        "- Summary within 4-5 sentences maximum"
         f"""{cleaned}"""
     )
 
@@ -120,7 +119,7 @@ async def identify_document_type(raw_text: str) -> DocType:
     )
     user = (
         "Given the following document text, identify which single label from the allowed list best describes it. "
-        "If you are not sure, respond with 'unknown'.\n\n"
+        "If you are not sure, respond with 'unknown'.\n"
         f"Document:\n{cleaned}"
     )
 

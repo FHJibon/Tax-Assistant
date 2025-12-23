@@ -26,7 +26,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const handleLanguageChange = (lang: string) => {
       setLanguage(lang)
       document.documentElement.lang = lang
-      // Add bangla class for font switching
       if (lang === 'bn') {
         document.body.classList.add('bangla-text')
       } else {
@@ -46,7 +45,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     i18n.changeLanguage(lang)
   }
 
-  // Prevent hydration mismatch by ensuring initial render matches server
   if (!mounted) {
     return (
       <I18nContext.Provider

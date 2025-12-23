@@ -1,30 +1,22 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
 
-// Create axios instance with default config
 const api: AxiosInstance = axios.create({
-  // FastAPI runs on :8000 without '/api' prefix
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  // Image uploads can take longer due to OCR/summarization.
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // If sending FormData (file upload), don't force JSON Content-Type.
-    // Axios/browser will set the correct multipart boundary automatically.
     if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-      // Axios header typing differs across versions; normalize defensively.
       const headers: any = config.headers || {}
       try {
         if (headers && typeof headers.delete === 'function') {
           headers.delete('Content-Type')
         }
       } catch {
-        // ignore
       }
       if (headers) {
         delete headers['Content-Type']
@@ -37,7 +29,6 @@ api.interceptors.request.use(
       config.headers = headers
     }
 
-    // Add auth token if available
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -49,19 +40,15 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     return response
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Only redirect if a token exists (session expired/invalid),
-      // avoid redirect loops for intentional 401s like invalid login.
       if (typeof window !== 'undefined') {
         const token = localStorage.getItem('token')
         if (token) {
-          // Clear all cached user info to avoid stale UI
           localStorage.removeItem('userProfile')
           localStorage.removeItem('userEmail')
           localStorage.removeItem('userName')
@@ -76,7 +63,6 @@ api.interceptors.response.use(
   }
 )
 
-// API endpoints
 export const authAPI = {
   login: (credentials: { email: string; password: string }) =>
     api.post('/auth/login', credentials),
@@ -84,7 +70,6 @@ export const authAPI = {
   register: (userData: { name: string; email: string; password: string }) =>
     api.post('/auth/register', userData),
   
-  // No backend endpoint required; handled client-side
   logout: () => Promise.resolve({ data: { message: 'logged out' } } as AxiosResponse),
   
   forgotPassword: (email: string) =>
@@ -106,16 +91,31 @@ export const authAPI = {
 }
 
 export const taxAPI = {
-  // Chat endpoints
-  // Increase timeout for chat since LLM responses can take longer than 10s
-  sendChatMessage: (message: string, topK: number = 5, timeoutMs: number = 30000) =>
-    api.post('/chat/', { message, top_k: topK }, { timeout: timeoutMs }),
+  sendChatMessage: (
+    message: string,
+    topK: number = 5,
+    timeoutMs: number = 30000,
+    voiceTranscript?: string | null
+  ) =>
+    api.post(
+      '/chat/',
+      { message, top_k: topK, voice_transcript: voiceTranscript || undefined },
+      { timeout: timeoutMs }
+    ),
   getHistory: () => api.get('/chat/history'),
   terminateSession: () => api.post('/chat/terminate'),
   generateTaxReturn: (timeoutMs: number = 60000) =>
     api.get('/generate/tax-return', { responseType: 'blob', timeout: timeoutMs }),
   generateTaxReturnFromForm: (payload: any, timeoutMs: number = 60000) =>
     api.post('/generate/tax-return', payload, { responseType: 'blob', timeout: timeoutMs }),
+}
+
+export const speechAPI = {
+  transcribe: (audioBlob: Blob, filename: string = 'voice.webm', timeoutMs: number = 120000) => {
+    const form = new FormData()
+    form.append('audio', audioBlob, filename)
+    return api.post('/speech/transcribe', form, { timeout: timeoutMs })
+  },
 }
 
 export const uploadAPI = {
@@ -129,24 +129,20 @@ export const userAPI = {
     api.put('/user/profile', profileData),
 }
 
-// Utility functions
 export const handleApiError = (error: any) => {
   if (error.response) {
-    // Server responded with error status
     return {
       message: error.response.data?.message || 'An error occurred',
       status: error.response.status,
       data: error.response.data,
     }
   } else if (error.request) {
-    // Request was made but no response received
     return {
       message: 'Network error. Please check your connection.',
       status: 0,
       data: null,
     }
   } else {
-    // Something else happened
     return {
       message: error.message || 'An unexpected error occurred',
       status: 0,

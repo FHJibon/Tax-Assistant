@@ -1,7 +1,8 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
+import re
 import subprocess
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -23,13 +24,13 @@ async def _store_generated_pdf(
     user_id: int,
     session_id: str,
     pdf_bytes: bytes,
-) -> None:
+) -> str:
     from app.model.model import GeneratedFile, User
 
     user = await db.get(User, user_id)
     user_name = getattr(user, "name", "") if user is not None else ""
-
     safe_base = (user_name or f"user_{user_id}").strip() or f"user_{user_id}"
+    safe_base = re.sub(r"[^A-Za-z0-9]+", "_", safe_base).strip("_") or f"user_{user_id}"
     filename = f"{safe_base}.pdf"
 
     record = GeneratedFile(
@@ -46,8 +47,6 @@ async def _store_generated_pdf(
     try:
         await db.commit()
     except Exception:
-        # If the existing DB table doesn't have the new columns yet,
-        # fall back to storing at least the filename + user metadata.
         await db.rollback()
         fallback = GeneratedFile(
             user_id=user_id,
@@ -56,6 +55,8 @@ async def _store_generated_pdf(
         )
         db.add(fallback)
         await db.commit()
+
+    return filename
 
 def _html_to_pdf_bytes(html: str) -> bytes:
     base_dir = Path(__file__).resolve().parent.parent
@@ -77,14 +78,14 @@ def _html_to_pdf_bytes(html: str) -> bytes:
         raise RuntimeError("Node PDF renderer returned empty output")
     return completed.stdout
 
-async def generate_tax_return_pdf(db: AsyncSession, user_id: int, session_id: str) -> bytes:
+async def generate_tax_return_pdf(db: AsyncSession, user_id: int, session_id: str) -> Tuple[bytes, str]:
     context = await build_tax_return_context(db=db, user_id=user_id, session_id=session_id)
     env = _get_jinja_env()
     template = env.get_template("tax_return.html")
     html = template.render(c=context)
     pdf_bytes = _html_to_pdf_bytes(html)
-    await _store_generated_pdf(db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes)
-    return pdf_bytes
+    filename = await _store_generated_pdf(db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes)
+    return pdf_bytes, filename
 
 
 async def generate_tax_return_pdf_with_overrides(
@@ -93,11 +94,11 @@ async def generate_tax_return_pdf_with_overrides(
     user_id: int,
     session_id: str,
     overrides: Optional[Dict[str, Any]] = None,
-) -> bytes:
+) -> Tuple[bytes, str]:
     context = await build_tax_return_context(db=db, user_id=user_id, session_id=session_id, overrides=overrides)
     env = _get_jinja_env()
     template = env.get_template("tax_return.html")
     html = template.render(c=context)
     pdf_bytes = _html_to_pdf_bytes(html)
-    await _store_generated_pdf(db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes)
-    return pdf_bytes
+    filename = await _store_generated_pdf(db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes)
+    return pdf_bytes, filename

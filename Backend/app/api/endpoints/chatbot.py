@@ -29,10 +29,14 @@ async def assistant(
 
     if request.message.strip().lower() == "terminate my session":
         new_session_id = await terminate_active_session(db, user_id)
-        return QueryResponse(answer="Session terminated. Starting a new session.", session_id=new_session_id, terminated=True)
+        return QueryResponse(
+            answer="Session terminated. Refresh the Page",
+            session_id=new_session_id,
+            terminated=True,
+        )
 
     session = await get_or_create_active_session(db, user_id)
-    await persist_message(db, session.id, "user", request.message)
+    await persist_message(db, session.id, "user", request.message, voice_transcript=request.voice_transcript)
     history_items = await fetch_history(db, user_id)
     answer, sources = await rag(request.message, request.top_k, chat_history=history_items)
     await persist_message(db, session.id, "assistant", answer)

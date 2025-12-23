@@ -49,7 +49,6 @@ def _normalize_tax_fy(value: Any) -> str:
     if raw in {"2025/26", "2025-26", "2025_26", "202526"}:
         return "2025_26"
 
-    # Default: keep existing behaviour aligned to 350k exemption.
     return "2024_25"
 
 
@@ -84,7 +83,6 @@ def _normalize_gender(value: Any) -> Optional[str]:
     if s in {"female", "f", "woman", "women", "girl"}:
         return "female"
 
-    # Common Bangla variants
     if "নারী" in s or "মহিলা" in s:
         return "female"
     if "পুরুষ" in s:
@@ -298,11 +296,53 @@ TAX_POLICIES: Dict[str, Dict[str, Any]] = {
     },
 }
 
+_SPECIAL_EXEMPTION_WAR_WOUNDED_FF: Dict[str, float] = {
+    "2024_25": 500000.0,
+    "2025_26": 525000.0,
+}
 
-def _get_exemption(*, policy_key: str, category: str) -> float:
-    policy = TAX_POLICIES.get(policy_key) or TAX_POLICIES["2024_25"]
+_SPECIAL_EXEMPTION_THIRD_GENDER: Dict[str, float] = {
+    "2024_25": 475000.0,
+    "2025_26": 500000.0,
+}
+
+_PARENT_OF_DISABLED_EXTRA: Dict[str, float] = {
+    "2024_25": 50000.0,
+    "2025_26": 50000.0,
+}
+
+
+def _get_exemption(
+    *,
+    policy_key: str,
+    category: str,
+    war_wounded_ff: bool = False,
+    third_gender: bool = False,
+    parent_of_disabled: bool = False,
+) -> float:
+
+    key = policy_key if policy_key in TAX_POLICIES else "2024_25"
+    policy = TAX_POLICIES.get(key) or TAX_POLICIES["2024_25"]
     exemption_map = policy.get("exemption") or {}
-    return safe_float(exemption_map.get(category) or exemption_map.get("general") or 0.0)
+
+    base = safe_float(exemption_map.get(category) or exemption_map.get("general") or 0.0)
+    effective = base
+
+    if war_wounded_ff:
+        special = _SPECIAL_EXEMPTION_WAR_WOUNDED_FF.get(key)
+        if special is not None:
+            effective = max(effective, safe_float(special))
+
+    if third_gender:
+        special = _SPECIAL_EXEMPTION_THIRD_GENDER.get(key)
+        if special is not None:
+            effective = max(effective, safe_float(special))
+
+    if parent_of_disabled:
+        extra = _PARENT_OF_DISABLED_EXTRA.get(key, 0.0)
+        effective += safe_float(extra)
+
+    return effective
 
 
 def compute_employment_exemption(employment_income: float) -> float:
@@ -323,7 +363,6 @@ def _allocate_exemption_by_components(*, total_exempt: float, components: Dict[s
         taxable = {k: amounts[k] for k in amounts.keys()}
         return {"exempt": exempt, "taxable": taxable}
 
-    # Base allocation by proportional share (floor), then distribute remainder by largest fractions.
     alloc: Dict[str, int] = {}
     fractions: List[tuple[str, float]] = []
 
@@ -341,7 +380,6 @@ def _allocate_exemption_by_components(*, total_exempt: float, components: Dict[s
         for i in range(remainder):
             alloc[fractions[i % len(fractions)][0]] += 1
 
-    # Clamp (should already be safe) and compute taxable.
     exempt: Dict[str, int] = {k: min(amounts[k], max(0, alloc.get(k, 0))) for k in amounts.keys()}
     taxable: Dict[str, int] = {k: max(0, amounts[k] - exempt[k]) for k in amounts.keys()}
     return {"exempt": exempt, "taxable": taxable}
@@ -361,8 +399,22 @@ def compute_total_investment(inp: TaxInputs) -> float:
     )
 
 
-def compute_taxable_income(*, total_income: float, policy_key: str, category: str) -> float:
-    exemption = _get_exemption(policy_key=policy_key, category=category)
+def compute_taxable_income(
+    *,
+    total_income: float,
+    policy_key: str,
+    category: str,
+    war_wounded_ff: bool = False,
+    third_gender: bool = False,
+    parent_of_disabled: bool = False,
+) -> float:
+    exemption = _get_exemption(
+        policy_key=policy_key,
+        category=category,
+        war_wounded_ff=war_wounded_ff,
+        third_gender=third_gender,
+        parent_of_disabled=parent_of_disabled,
+    )
     remaining = safe_float(total_income) - exemption
     return remaining if remaining > 0 else 0.0
 
@@ -576,6 +628,10 @@ async def build_tax_return_context(
 
     policy_key = _normalize_tax_fy(merged.get("tax_fy"))
 
+    benefit_war_wounded_ff = bool(merged.get("benefit_war_wounded_ff"))
+    benefit_third_gender = bool(merged.get("benefit_third_gender"))
+    benefit_parent_of_disabled = bool(merged.get("benefit_parent_of_disabled"))
+
     inp = TaxInputs(
         taxpayer_category=_coerce_taxpayer_category(merged.get("taxpayer_category")) or "general",
         income_employment=employment_income,
@@ -587,7 +643,14 @@ async def build_tax_return_context(
 
     total_income = employment_taxable + safe_float(inp.income_bank_interest)
     total_investment = compute_total_investment(inp)
-    taxable_income = compute_taxable_income(total_income=total_income, policy_key=policy_key, category=inp.taxpayer_category)
+    taxable_income = compute_taxable_income(
+        total_income=total_income,
+        policy_key=policy_key,
+        category=inp.taxpayer_category,
+        war_wounded_ff=benefit_war_wounded_ff,
+        third_gender=benefit_third_gender,
+        parent_of_disabled=benefit_parent_of_disabled,
+    )
 
     flat_rate = 0.30 if bool(merged.get("nri_non_citizen")) else None
     gross_tax = compute_gross_tax(taxable_income=taxable_income, policy_key=policy_key, flat_rate=flat_rate)
@@ -627,12 +690,12 @@ async def build_tax_return_context(
     inferred_senior = (age_years or 0) >= 65 if age_years is not None else False
     inferred_disabled = inp.taxpayer_category == "disabled"
 
-    tick_war_wounded_ff = bool(merged.get("benefit_war_wounded_ff"))
+    tick_war_wounded_ff = benefit_war_wounded_ff
     tick_female = bool(merged.get("benefit_female")) if "benefit_female" in merged else inferred_female
-    tick_third_gender = bool(merged.get("benefit_third_gender"))
+    tick_third_gender = benefit_third_gender
     tick_disabled = bool(merged.get("benefit_disabled")) if "benefit_disabled" in merged else inferred_disabled
     tick_senior = bool(merged.get("benefit_senior")) if "benefit_senior" in merged else inferred_senior
-    tick_parent_of_disabled = bool(merged.get("benefit_parent_of_disabled"))
+    tick_parent_of_disabled = benefit_parent_of_disabled
 
     context: Dict[str, Any] = {
         **merged,

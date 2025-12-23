@@ -8,6 +8,7 @@ from app.api.endpoints.chatbot import router as chat_router
 from app.api.endpoints.upload import router as upload_router
 from app.api.endpoints.user import router as user_router
 from app.api.endpoints.generate import router as generate_router
+from app.api.endpoints.speech import router as speech_router
 
 app = FastAPI(title="AI Tax & Law Assistant")
 
@@ -33,6 +34,7 @@ app.include_router(chat_router)
 app.include_router(upload_router)
 app.include_router(user_router)
 app.include_router(generate_router)
+app.include_router(speech_router)
 
 @app.get("/")
 async def root():

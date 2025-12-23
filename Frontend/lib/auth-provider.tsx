@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Verify token with backend on mount to avoid stale local cache
     const init = async () => {
       const token = getAuthToken()
       if (!token) { setInitialized(true); return }
@@ -34,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({ email: emailFinal || '', name })
         if (emailFinal) localStorage.setItem('userEmail', emailFinal)
         if (name) localStorage.setItem('userName', name)
-        // Sync minimal profile cache
         const existingProfileRaw = localStorage.getItem('userProfile')
         const existingProfile = existingProfileRaw ? JSON.parse(existingProfileRaw) : {}
         const newProfile = {
@@ -60,12 +58,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    try {
       const { data } = await authAPI.login({ email, password })
       if (data?.access_token) {
         setAuthToken(data.access_token)
         setIsAuthenticated(true)
-        // Fetch current user details
         try {
           const me = await authAPI.me()
           const userInfo = me?.data
@@ -74,7 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser({ email: emailFinal || email, name })
           if (emailFinal) localStorage.setItem('userEmail', emailFinal)
           if (name) localStorage.setItem('userName', name)
-          // Optionally sync dashboard profile
           const existingProfileRaw = localStorage.getItem('userProfile')
           const existingProfile = existingProfileRaw ? JSON.parse(existingProfileRaw) : {}
           const newProfile = {

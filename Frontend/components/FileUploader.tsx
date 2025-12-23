@@ -106,9 +106,6 @@ export function FileUploader({
       return extOk || typeOk
     }
 
-    // Debug: Log file info
-    console.log('Selected files:', newFiles.map(f => ({ name: f.name, size: f.size, type: f.type })))
-
     const validFiles = newFiles.filter(file => {
       const isValidType = isAccepted(file)
       const isValidSize = file.size <= maxSize * 1024 * 1024
@@ -151,8 +148,6 @@ export function FileUploader({
 
     // Upload to backend
     fileItems.forEach((fileItem, index) => {
-      // Debug: Log file before upload
-      console.log('Uploading file:', validFiles[index])
       uploadFile(fileItem.id, validFiles[index])
     })
 

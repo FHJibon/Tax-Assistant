@@ -7,16 +7,12 @@ Base = declarative_base()
 
 
 class GeneratedFile(Base):
-    __tablename__ = "1 Files"
+    __tablename__ = "01. Files"
 
     id = Column(Integer, primary_key=True, index=True)
-    # Keep a simple reference to the user; no cascade delete so
-    # records are not removed when the user is terminated.
     user_id = Column(Integer, index=True, nullable=False)
     user_name = Column(String(50), nullable=False)
     filename = Column(String, nullable=False)
-    # Optional metadata/content for storing the generated PDF in DB.
-    # Marked nullable=True to remain compatible with older DB schemas.
     session_id = Column(String, nullable=True, index=True)
     mime_type = Column(String, nullable=True)
     size = Column(Integer, nullable=True)
@@ -55,6 +51,7 @@ class ChatMessage(Base):
     session_id = Column(String, ForeignKey("11. Sessions.id", ondelete="CASCADE"), index=True, nullable=False)
     role = Column(String(20), nullable=False)
     content = Column(String, nullable=False)
+    voice_transcript = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class UploadedDocument(Base):
@@ -88,7 +85,6 @@ class TinInfo(Base):
     user_id = Column(Integer, ForeignKey("10. User.id", ondelete="CASCADE"), index=True, nullable=False)
     tin_number = Column(String, nullable=False)
     tax_zone = Column(String, nullable=False)
-    # Optional TIN circle (circle / range information from TIN certificate)
     tin_circle = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -98,7 +94,6 @@ class SalaryInfo(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String, ForeignKey("11. Sessions.id", ondelete="CASCADE"), index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("10. User.id", ondelete="CASCADE"), index=True, nullable=False)
-    # Employer / company name from salary certificate
     employer_name = Column(String, nullable=True)
     basic_pay = Column(Float, nullable=False)
     house_rent = Column(Float, nullable=False)
@@ -114,7 +109,6 @@ class BankInfo(Base):
     session_id = Column(String, ForeignKey("11. Sessions.id", ondelete="CASCADE"), index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("10. User.id", ondelete="CASCADE"), index=True, nullable=False)
     interest_income = Column(Float, nullable=False)
-    # Optional current/closing bank balance extracted from statement/certificate
     bank_balance = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

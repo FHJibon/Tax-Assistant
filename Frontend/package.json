@@ -58,6 +58,7 @@
   },
   "devDependencies": {
     "@types/react-dropzone": "^5.1.0",
+    "baseline-browser-mapping": "^2.9.11",
     "eslint": "^8.55.0",
     "eslint-config-next": "^14.0.4"
   }

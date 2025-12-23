@@ -9,9 +9,8 @@ import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import dynamic from 'next/dynamic'
 import { Calendar as CalendarIcon } from 'lucide-react'
-import { Calendar as DateCalendar } from '@/components/ui/calendar'
 import { format as formatDate } from 'date-fns'
 import { 
   User,
@@ -27,6 +26,11 @@ import {
   Shield,
   CheckCircle
 } from 'lucide-react'
+
+const Popover = dynamic(() => import('@/components/ui/popover').then(m => m.Popover), { ssr: false })
+const PopoverTrigger = dynamic(() => import('@/components/ui/popover').then(m => m.PopoverTrigger), { ssr: false })
+const PopoverContent = dynamic(() => import('@/components/ui/popover').then(m => m.PopoverContent), { ssr: false })
+const DateCalendar = dynamic(() => import('@/components/ui/calendar').then(m => m.Calendar), { ssr: false })
 
 function ProfilePageInner() {
   const { t, language, setLanguage } = useI18n()
@@ -305,11 +309,7 @@ function ProfilePageInner() {
                       <User className="h-5 w-5" />
                       <span>{language === 'bn' ? 'ব্যক্তিগত তথ্য' : 'Personal Information'}</span>
                     </CardTitle>
-                    <CardDescription className={language === 'bn' ? 'bangla-text' : ''}>
-                      {language === 'bn' 
-                        ? 'আপনার প্রোফাইল বিস্তারিত আপডেট করুন' 
-                        : 'Update your profile details'}
-                    </CardDescription>
+                    {/* Removed profile details update description as requested */}
                   </div>
                   {!isEditing && (
                     <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>

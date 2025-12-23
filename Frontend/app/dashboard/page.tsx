@@ -159,9 +159,9 @@ export default function DashboardPage() {
                     </div>
                     {language === 'bn' ? 'আমার তথ্য' : 'My Data'}
                   </h1>
-                  <p className={`text-base text-gray-400 animate-fade-in-up animation-delay-400 ${
+                  <p className={`text-base text-white/80 animate-fade-in-up animation-delay-400 ${
                     language === 'bn' ? 'bangla-text' : ''
-                  }`}>{language === 'bn' ? 'আপনার ব্যক্তিগত তথ্য এবং প্রোফাইল বিবরণ' : 'Your personal information and profile details'}</p>
+                  }`}>{language === 'bn' ? 'আপনার ব্যক্তিগত তথ্য এবং প্রোফাইল বিবরণ' : 'Personal Information & Identification'}</p>
                 </div>
                 <Button variant="outline" size="lg" className={`text-base px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-500 text-white border-0 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 group/btn font-semibold animate-fade-in-scale animation-delay-600 ${
                   language === 'bn' ? 'bangla-text' : ''

@@ -43,7 +43,7 @@ async def upload_document(
     authorization: Optional[str] | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ):
-    # Authentication
+
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
     try:
@@ -53,21 +53,19 @@ async def upload_document(
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid Authorization token")
 
-    # Get user session and profile
     session = await get_or_create_active_session(db, user_id)
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Validate profile completeness (required for all document types)
     if not _is_profile_complete(user):
         raise HTTPException(
             status_code=400,
             detail="Complete profile before uploading documents",
         )
 
-    # File validation
+
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Max 5 MB")
@@ -79,7 +77,6 @@ async def upload_document(
     if len(docs) >= 10:
         raise HTTPException(status_code=400, detail="Upload limit reached")
 
-    # Extract and classify document
     extracted_text = ""
     doc_type: DocType = DocType.UNKNOWN
     try:
@@ -93,7 +90,6 @@ async def upload_document(
         extracted_text = ""
         doc_type = DocType.UNKNOWN
 
-    # Persist document to database
     doc = UploadedDocument(
         session_id=session.id,
         filename=file.filename,
@@ -105,7 +101,6 @@ async def upload_document(
     await db.commit()
     await db.refresh(doc)
 
-    # Extract structured data and generate summary
     summary = None
     try:
         if doc_type != DocType.UNKNOWN:
@@ -121,7 +116,7 @@ async def upload_document(
 
         summary = await summarize(filename=file.filename or "document", text=extracted_text)
         if doc_type == DocType.UNKNOWN and not summary:
-            summary = "- Title: <short>\n- Overview: 4-5 sentences maximum\n"
+            summary = "Provide a concise summary with bullet points.\n- Summary within 4-5 sentences maximum\n"
         
         if summary:
             await persist_message(

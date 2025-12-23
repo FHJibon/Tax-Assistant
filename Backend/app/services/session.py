@@ -72,8 +72,8 @@ async def delete_active_session(db: AsyncSession, user_id: int) -> bool:
     await db.commit()
     return True
 
-async def persist_message(db: AsyncSession, session_id: str, role: str, content: str) -> int:
-    msg = ChatMessage(session_id=session_id, role=role, content=content)
+async def persist_message(db: AsyncSession, session_id: str, role: str, content: str, voice_transcript: str | None = None) -> int:
+    msg = ChatMessage(session_id=session_id, role=role, content=content, voice_transcript=voice_transcript)
     db.add(msg)
     await db.commit()
     await db.refresh(msg)
@@ -93,6 +93,12 @@ async def fetch_history(db: AsyncSession, user_id: int) -> list[dict]:
     )
     messages = res.scalars().all()
     return [
-        {"id": m.id, "role": m.role, "content": m.content, "created_at": str(m.created_at)}
+        {
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "voice_transcript": getattr(m, 'voice_transcript', None),
+            "created_at": str(m.created_at),
+        }
         for m in messages
     ]

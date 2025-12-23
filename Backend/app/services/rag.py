@@ -12,7 +12,7 @@ def _detect_language(text: str) -> str:
             return 'bn'
     return 'en'
 
-async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, chat_history: Optional[List[Dict]] = None) -> Tuple[str, List[dict]]:
+async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.7, chat_history: Optional[List[Dict]] = None) -> Tuple[str, List[dict]]:
     query_emb = await embed(query)
     raw_results = await search(query_emb, top_k)
     valid_results = [r for r in raw_results if r.score >= score_threshold]
@@ -33,7 +33,8 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
     if chat_history:
         for m in chat_history[-20:]:
             content = (m.get("content") or "").strip()
-            if content.startswith("Summary:"):
+            role = (m.get("role") or "").strip().lower()
+            if role == "assistant" and content.startswith("Summary:"):
                 summary_blocks.append(content)
                 sources.append({
                     "id": f"summary-{m.get('id')}",
@@ -52,21 +53,20 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
             for idx, s in enumerate(summary_blocks, start=1):
                 combined_context_blocks.append(f"[S{idx}] {s}")
 
-        numbered_context = "\n\n".join(combined_context_blocks)
+        numbered_context = "\n".join(combined_context_blocks)
         instructions = (
-            "Use the context below as your primary source. Use Income Tax Act 2023 as a secondary reference when needed.\n"
             "Small or focused questions: reply in 1–2 short sentences.\n"
-            "Bigger questions or calculation: one summary sentence, add up to 5 bullet points for clarity.\n"
-            "Do not introduce yourself or add long disclaimers."
+            "Bigger questions or calculation: one summary sentence, add 3-5 bullet points for clarity.\n"
+            "Do not introduce yourself."
         )
         is_rag_mode = True
     else:
         numbered_context = "(No relevant legal documents or uploaded document summaries found in database)"
         instructions = (
-            "Rely on fully knowledge of Bangladesh NBR laws and Income Tax Act 2023.\n"
+            "Rely on fully knowledge of Income Tax Act 2023.\n"
             "Small or focused questions: reply in 1–2 short sentences.\n"
-            "Bigger questions or calculation: one summary sentence, add up to 5 bullet points for clarity.\n"
-            "Do not introduce yourself or add long disclaimers"
+            "Bigger questions or calculation: one summary sentence, add 3-5 bullet points for clarity.\n"
+            "Do not introduce yourself."
         )
         is_rag_mode = False
 
@@ -103,7 +103,7 @@ async def rag_answer(query: str, top_k: int = 10, score_threshold: float = 0.5, 
     res = await client.chat.completions.create(
         model=GPT_MODEL,
         messages=messages,
-        temperature=0.2 if is_rag_mode else 0.4,
+        temperature=0.5 if is_rag_mode else 0.7,
         max_completion_tokens=800,
     )
 

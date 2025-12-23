@@ -27,13 +27,13 @@ async def generate_tax_return(
 
     session = await get_or_create_active_session(db, user_id)
 
-    pdf_bytes = await generate_tax_return_pdf(db, user_id=user_id, session_id=session.id)
+    pdf_bytes, filename = await generate_tax_return_pdf(db, user_id=user_id, session_id=session.id)
 
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": 'attachment; filename="tax_return.pdf"',
+            "Content-Disposition": f'attachment; filename="{filename}"',
         },
     )
 
@@ -57,7 +57,7 @@ async def generate_tax_return_from_form(
     session = await get_or_create_active_session(db, user_id)
     overrides = payload.model_dump(exclude_unset=True)
 
-    pdf_bytes = await generate_tax_return_pdf_with_overrides(
+    pdf_bytes, filename = await generate_tax_return_pdf_with_overrides(
         db,
         user_id=user_id,
         session_id=session.id,
@@ -68,6 +68,6 @@ async def generate_tax_return_from_form(
         iter([pdf_bytes]),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": 'attachment; filename="tax_return.pdf"',
+            "Content-Disposition": f'attachment; filename="{filename}"',
         },
     )

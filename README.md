@@ -42,6 +42,3 @@ npm install
 npm run dev
 ```
 #### Visit: http://localhost:3000  
-
-
-**Make sure the backend is running before using the frontend app for full functionality.**
