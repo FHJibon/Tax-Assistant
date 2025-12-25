@@ -58,35 +58,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   const login = async (email: string, password: string): Promise<boolean> => {
-      const { data } = await authAPI.login({ email, password })
+    try {
+      const { data } = await authAPI.login({ email, password });
       if (data?.access_token) {
-        setAuthToken(data.access_token)
-        setIsAuthenticated(true)
+        setAuthToken(data.access_token);
+        setIsAuthenticated(true);
         try {
-          const me = await authAPI.me()
-          const userInfo = me?.data
-          const name = userInfo?.name as string | undefined
-          const emailFinal = userInfo?.email as string | undefined
-          setUser({ email: emailFinal || email, name })
-          if (emailFinal) localStorage.setItem('userEmail', emailFinal)
-          if (name) localStorage.setItem('userName', name)
-          const existingProfileRaw = localStorage.getItem('userProfile')
-          const existingProfile = existingProfileRaw ? JSON.parse(existingProfileRaw) : {}
+          const me = await authAPI.me();
+          const userInfo = me?.data;
+          const name = userInfo?.name as string | undefined;
+          const emailFinal = userInfo?.email as string | undefined;
+          setUser({ email: emailFinal || email, name });
+          if (emailFinal) localStorage.setItem('userEmail', emailFinal);
+          if (name) localStorage.setItem('userName', name);
+          const existingProfileRaw = localStorage.getItem('userProfile');
+          const existingProfile = existingProfileRaw ? JSON.parse(existingProfileRaw) : {};
           const newProfile = {
             ...existingProfile,
             name: name || existingProfile.name || '',
             email: emailFinal || existingProfile.email || '',
-          }
-          localStorage.setItem('userProfile', JSON.stringify(newProfile))
+          };
+          localStorage.setItem('userProfile', JSON.stringify(newProfile));
         } catch {
-          setUser({ email })
-          localStorage.setItem('userEmail', email)
+          setUser({ email });
+          localStorage.setItem('userEmail', email);
         }
-        return true
+        return true;
       }
-      return false
+      return false;
     } catch (err) {
-      return false
+      return false;
     }
   }
 

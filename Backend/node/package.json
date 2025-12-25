@@ -1,8 +1,8 @@
 {
-  "name": "tax-assistant-renderer",
+  "name": "renderer",
   "private": true,
   "version": "1.0.0",
-  "description": "Render HTML to PDF using Chromium for pixel-perfect output",
+  "description": "Render HTML to PDF",
   "type": "commonjs",
   "dependencies": {
     "puppeteer": "^23.11.1"

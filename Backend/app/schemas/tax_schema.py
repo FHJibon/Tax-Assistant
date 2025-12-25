@@ -10,7 +10,7 @@ class NIDSchema(BaseModel):
 class TINSchema(BaseModel):
     tin_number: str = Field(...)
     tax_zone: str = Field(...)
-    tin_circle: str = Field(default="")
+    tax_circle: str = Field(default="")
 
 class SalarySchema(BaseModel):
     employer_name: str = Field(default="")

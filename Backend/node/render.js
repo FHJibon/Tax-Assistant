@@ -19,7 +19,7 @@ async function main() {
 
   try {
     const page = await browser.newPage();
-    await page.emulateMediaType('screen');
+    await page.emulateMediaType('print');
 
     await page.setContent(html, { waitUntil: 'load' });
 

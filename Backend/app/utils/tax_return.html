@@ -20,7 +20,7 @@
         width: 210mm;
         background: white;
         margin: 20px auto;
-        padding: 15mm 15mm 6mm 15mm;
+        padding: 15mm 15mm 15mm 15mm;
         position: relative;
         page-break-after: always;
     }
@@ -36,6 +36,7 @@
             margin: 0;
             border: none;
             width: 210mm;
+            height: 297mm;
             box-shadow: none;
             page-break-after: always;
         }
@@ -158,11 +159,23 @@
     td {
         vertical-align: middle;
     }
+        .compact-table tr > td:nth-child(2):last-child { text-align: right; } /* 2-column rows */
+        .compact-table tr > td:nth-child(3):last-child { text-align: right; } /* 3-column rows */
+        .compact-table tr > td:nth-child(2):nth-last-child(3),
+        .compact-table tr > td:nth-child(3):nth-last-child(2),
+        .compact-table tr > td:nth-child(4):last-child { text-align: right; } /* 4-column rows */
+
+    table.compact-table td:not(:first-child):empty:not(.shaded)::before {
+        content: "0";
+    }
 
     .shaded { background-color: #e6e6e6; }
     .no-border, .no-border td { border: none !important; padding: 2px 0; }
-    .col-amount { width: 130px; text-align: center; }
+    .col-amount { width: 160px; text-align: right; }
     .col-narrow { width: 35px; text-align: center; }
+
+    .assets-amounts td:nth-child(2),
+    .assets-amounts td:nth-child(3) { text-align: right; }
 
     .office-use-box {
         border: 1px solid #000;
@@ -184,7 +197,7 @@
 
     .footer-num {
         position: absolute;
-        bottom: 1mm;
+        bottom: 10mm;
         width: 100%;
         left: 0;
         text-align: center;
@@ -270,7 +283,7 @@
         <div class="p1-row">
             <div class="p1-col" style="width: 40%;">
                 <span class="p1-label">5. Assessment Year:</span>
-                <span class="input-line"></span>
+                <span class="input-line">{{ c.assessment_year or '2024-25' }}</span>
             </div>
             <div style="width: 60%; text-align: right;">
                 6. Residential Status: Resident <span class="box-check">{% if c.tick_resident %}✓{% endif %}</span> / Non-resident <span class="box-check">{% if c.tick_non_resident %}✓{% endif %}</span>
@@ -548,26 +561,25 @@
         <thead>
             <tr>
                 <th style="text-align: center;">Particulars</th>
-                <th width="130">Income (Taka)</th>
-                <th width="130">Income (Taka)</th>
+                <th width="160">Income (Taka)</th>
             </tr>
         </thead>
         <tbody>
-            <tr><td>1. Basic pay</td><td>{{ '%.0f' % (c.sal_basic or 0) }}</td><td></td></tr>
-            <tr><td>2. Allowances</td><td>{{ '%.0f' % ((c.sal_rent or 0) + (c.sal_medical or 0) + (c.sal_conveyance or 0) + (c.sal_festival or 0)) }}</td><td></td></tr>
-            <tr><td>3. Advance / Arrear Salary</td><td></td><td></td></tr>
-            <tr><td>4. Gratuity, Annuity, Pension or similar benefit</td><td></td><td></td></tr>
-            <tr><td>5. Perquisites</td><td></td><td></td></tr>
-            <tr><td>6. Receipt in lieu of or in addition to Salary or Wages</td><td></td><td></td></tr>
-            <tr><td>7. Income from Employee’s Share Scheme</td><td></td><td></td></tr>
-            <tr><td>8. Accommodation Facility</td><td></td><td></td></tr>
-            <tr><td>9. Transport Facility</td><td></td><td></td></tr>
-            <tr><td>10. Any other Facility provided by Employer</td><td></td><td></td></tr>
-            <tr><td>11. Employer’s Contribution to Recognized Provident Fund</td><td></td><td></td></tr>
-            <tr><td>12. Others, if any (provide detail)</td><td></td><td></td></tr>
-            <tr><td>13. Total Salary Received (aggregate of 1 to 12)</td><td>{{ '%.0f' % (c.sal_total or 0) }}</td><td></td></tr>
-            <tr><td>14. Exempted Amount (as per Part 1 of 6<sup>th</sup> Schedule)</td><td>{{ '%.0f' % (c.employment_exempt or 0) }}</td><td></td></tr>
-            <tr><td>15. Total Income from Salary (13 – 14)</td><td>{{ '%.0f' % (c.employment_taxable or 0) }}</td><td></td></tr>
+            <tr><td>1. Basic pay</td><td>{{ '%.0f' % (c.sal_basic or 0) }}</td></tr>
+            <tr><td>2. Allowances</td><td>{{ '%.0f' % ((c.sal_rent or 0) + (c.sal_medical or 0) + (c.sal_conveyance or 0) + (c.sal_festival or 0)) }}</td></tr>
+            <tr><td>3. Advance / Arrear Salary</td><td></td></tr>
+            <tr><td>4. Gratuity, Annuity, Pension or similar benefit</td><td></td></tr>
+            <tr><td>5. Perquisites</td><td></td></tr>
+            <tr><td>6. Receipt in lieu of or in addition to Salary or Wages</td><td></td></tr>
+            <tr><td>7. Income from Employee’s Share Scheme</td><td></td></tr>
+            <tr><td>8. Accommodation Facility</td><td></td></tr>
+            <tr><td>9. Transport Facility</td><td></td></tr>
+            <tr><td>10. Any other Facility provided by Employer</td><td></td></tr>
+            <tr><td>11. Employer’s Contribution to Recognized Provident Fund</td><td></td></tr>
+            <tr><td>12. Others, if any (provide detail)</td><td></td></tr>
+            <tr><td>13. Total Salary Received (aggregate of 1 to 12)</td><td>{{ '%.0f' % (c.sal_total or 0) }}</td></tr>
+            <tr><td>14. Exempted Amount (as per Part 1 of 6<sup>th</sup> Schedule)</td><td>{{ '%.0f' % (c.employment_exempt or 0) }}</td></tr>
+            <tr><td>15. Total Income from Salary (13 – 14)</td><td>{{ '%.0f' % (c.employment_taxable or 0) }}</td></tr>
         </tbody>
     </table>
     <div class="footer-num">4</div>
@@ -597,8 +609,7 @@
             <tr>
                 <th width="150" style="text-align: center;">Location, description and ownership proportion of property</th>
                 <th style="text-align: center;">Total Rental Income Computation</th>
-                <th width="100" style="text-align: center;">Amount (Taka)</th>
-                <th width="100" style="text-align: center;">Amount (Taka)</th>
+                <th width="160" style="text-align: center;">Amount (Taka)</th>
             </tr>
         </thead>
         <tbody>
@@ -606,42 +617,34 @@
                 <td rowspan="16" style="vertical-align: top;"></td>
                 <td>1. Rent Received or Annual Value (whichever is higher)</td>
                 <td></td>
-                <td></td>
             </tr>
             <tr>
                 <td>2. Advance Rent Received</td>
-                <td></td>
                 <td></td>
             </tr>
             <tr>
                 <td>3. Value of any Benefit in addition to 1 & 2</td>
                 <td></td>
-                <td></td>
             </tr>
             <tr>
                 <td>4. Adjusted Advance Rent</td>
-                <td></td>
                 <td></td>
             </tr>
             <tr>
                 <td>5. Vacancy Allowance</td>
                 <td></td>
-                <td></td>
             </tr>
             <tr>
                 <td>6. Total Rental Value (1 + 2 + 3 – 4 – 5)</td>
-                <td></td>
                 <td></td>
             </tr>
             <tr>
                 <td style="border-right: 1px solid #000;">7. Allowable Deduction:</td>
                 <td class="shaded" style="border-right: 1px solid #000; background-color: #fff;"></td>
-                <td class="shaded" style="border-right: 1px solid #000; background-color: #fff;"></td>
             </tr>
             <tr>
                 <td style="padding-left: 30px;">(a) Repair, Collection etc.</td>
                 <td></td>
-                <td rowspan="6"></td>
             </tr>
             <tr>
                 <td style="padding-left: 30px;">(b) Municipal or Local Tax</td>
@@ -666,16 +669,13 @@
             <tr>
                 <td>8. Total Admissible Deduction</td>
                 <td></td>
-                <td></td>
             </tr>
             <tr>
                 <td>9. Net Income (6 – 8)</td>
                 <td></td>
-                <td></td>
             </tr>
             <tr>
                 <td>10. Taxpayer’s Share, if applicable</td>
-                <td></td>
                 <td></td>
             </tr>
         </tbody>
@@ -862,21 +862,20 @@
             <tr>
                 <th width="50" style="text-align: center;">Serial No.</th>
                 <th style="text-align: center;">Particulars of Expenditure</th>
-                <th width="120" style="text-align: center;">Amount of Taka</th>
-                <th width="120" style="text-align: center;">Comments</th>
+                <th width="160" style="text-align: center;">Amount of Taka</th>
             </tr>
         </thead>
         <tbody>
-            <tr><td class="center">1.</td><td>Personal and family fooding, clothing and other essentials</td><td></td><td></td></tr>
-            <tr><td class="center">2.</td><td>Housing Expense</td><td></td><td></td></tr>
-            <tr><td class="center">3.</td><td>Personal Transport Expense</td><td></td><td></td></tr>
-            <tr><td class="center">4.</td><td>Utility Expense (Electricity, Gas, Water, Telephone, Mobile, Internet etc. Bills)</td><td></td><td></td></tr>
-            <tr><td class="center">5.</td><td>Education Expense</td><td></td><td></td></tr>
-            <tr><td class="center">6.</td><td>Personal Expense for Local and Foreign Travel, Vacation etc.</td><td></td><td></td></tr>
-            <tr><td class="center">7.</td><td>Festival and Other Special Expense</td><td></td><td></td></tr>
-            <tr><td class="center">8.</td><td>Tax Deducted / Collected at Source (with TS on Profit of Sanchaypatra) and Tax & Surcharge Paid based on Tax Return of Last Year)</td><td></td><td></td></tr>
-            <tr><td class="center">9.</td><td>Interest Paid on Personal Loan Received from Institution & Other Source</td><td></td><td></td></tr>
-            <tr><td></td><td class="right bold">Total:</td><td></td><td></td></tr>
+            <tr><td class="center">1.</td><td>Personal and family fooding, clothing and other essentials</td><td></td></tr>
+            <tr><td class="center">2.</td><td>Housing Expense</td><td></td></tr>
+            <tr><td class="center">3.</td><td>Personal Transport Expense</td><td></td></tr>
+            <tr><td class="center">4.</td><td>Utility Expense (Electricity, Gas, Water, Telephone, Mobile, Internet etc. Bills)</td><td></td></tr>
+            <tr><td class="center">5.</td><td>Education Expense</td><td></td></tr>
+            <tr><td class="center">6.</td><td>Personal Expense for Local and Foreign Travel, Vacation etc.</td><td></td></tr>
+            <tr><td class="center">7.</td><td>Festival and Other Special Expense</td><td></td></tr>
+            <tr><td class="center">8.</td><td>Tax Deducted / Collected at Source (with TS on Profit of Sanchaypatra) and Tax & Surcharge Paid based on Tax Return of Last Year)</td><td class="col-amount"></td></tr>
+            <tr><td class="center">9.</td><td>Interest Paid on Personal Loan Received from Institution & Other Source</td><td></td></tr>
+            <tr><td></td><td class="right bold">Total:</td><td></td></tr>
         </tbody>
     </table>
 
@@ -915,7 +914,7 @@
         </div>
     </div>
 
-    <table class="compact-table" style="border: 2px solid #000;">
+    <table class="compact-table assets-amounts" style="border: 2px solid #000;">
         <thead>
             <tr>
                 <th style="text-align: left; padding-left: 5px;">1. Sources of Fund:</th>
@@ -978,7 +977,7 @@
 </div>
 
 <div class="page">
-    <table class="compact-table" style="border: 2px solid #000;">
+    <table class="compact-table assets-amounts" style="border: 2px solid #000;">
         <tbody>
             <tr>
                 <td>

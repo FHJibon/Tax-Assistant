@@ -85,7 +85,7 @@ class TinInfo(Base):
     user_id = Column(Integer, ForeignKey("10. User.id", ondelete="CASCADE"), index=True, nullable=False)
     tin_number = Column(String, nullable=False)
     tax_zone = Column(String, nullable=False)
-    tin_circle = Column(String, nullable=True)
+    tax_circle = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class SalaryInfo(Base):

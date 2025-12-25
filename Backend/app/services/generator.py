@@ -24,11 +24,12 @@ async def _store_generated_pdf(
     user_id: int,
     session_id: str,
     pdf_bytes: bytes,
-) -> str:
-    from app.model.model import GeneratedFile, User
+    user_name_override: Optional[str] = None) -> str:
 
+    from app.model.model import GeneratedFile, User
     user = await db.get(User, user_id)
-    user_name = getattr(user, "name", "") if user is not None else ""
+    user_name_db = getattr(user, "name", "") if user is not None else ""
+    user_name = (user_name_override or user_name_db) or ""
     safe_base = (user_name or f"user_{user_id}").strip() or f"user_{user_id}"
     safe_base = re.sub(r"[^A-Za-z0-9]+", "_", safe_base).strip("_") or f"user_{user_id}"
     filename = f"{safe_base}.pdf"
@@ -84,7 +85,9 @@ async def generate_tax_return_pdf(db: AsyncSession, user_id: int, session_id: st
     template = env.get_template("tax_return.html")
     html = template.render(c=context)
     pdf_bytes = _html_to_pdf_bytes(html)
-    filename = await _store_generated_pdf(db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes)
+    filename = await _store_generated_pdf(
+        db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes, user_name_override=context.get("name")
+    )
     return pdf_bytes, filename
 
 
@@ -100,5 +103,7 @@ async def generate_tax_return_pdf_with_overrides(
     template = env.get_template("tax_return.html")
     html = template.render(c=context)
     pdf_bytes = _html_to_pdf_bytes(html)
-    filename = await _store_generated_pdf(db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes)
+    filename = await _store_generated_pdf(
+        db, user_id=user_id, session_id=session_id, pdf_bytes=pdf_bytes, user_name_override=context.get("name")
+    )
     return pdf_bytes, filename

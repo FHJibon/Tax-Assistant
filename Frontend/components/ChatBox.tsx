@@ -608,7 +608,11 @@ export function ChatBox({ className, externalLoading, externalLoadingText, reloa
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
                     <div
                       className={`
-                        relative rounded-2xl px-5 py-3.5 break-words whitespace-pre-wrap
+                        relative rounded-2xl px-5 py-3.5 break-words ${
+                          message.sender === 'assistant'
+                            ? 'whitespace-normal'
+                            : 'whitespace-pre-wrap'
+                        }
                         ${
                           message.sender === 'user'
                             ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30'
@@ -621,7 +625,7 @@ export function ChatBox({ className, externalLoading, externalLoadingText, reloa
                       {message.sender === 'assistant' ? (
                         <Markdown content={message.content} />
                       ) : (
-                        <p className="text-[15px] leading-relaxed relative z-10 font-medium tracking-wide">
+                        <p className="text-[15px] leading-[1.75] relative z-10 font-medium tracking-wide">
                           {message.content}
                         </p>
                       )}

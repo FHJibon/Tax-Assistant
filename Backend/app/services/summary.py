@@ -173,7 +173,7 @@ async def extract_structured_data(raw_text: str, doc_type: DocType) -> Optional[
     example_jsons = {
         DocType.SALARY: '{"employer_name": "Desco Ltd", "basic_pay": 1000, "house_rent": 100, "medical": 100, "festival_bonus": 100, "conveyance": 100}',
         DocType.NID: '{"name": "Jack", "nid_number": "12334567889", "date_of_birth": "1990-01-01"}',
-        DocType.TIN: '{"tin_number": "123456789912", "tax_zone": "Dhaka", "tin_circle": "dhaka"}',
+        DocType.TIN: '{"tin_number": "123456789912", "tax_zone": "Dhaka", "tax_circle": "01"}',
         DocType.BANK: '{"interest_income": 200, "bank_balance": 5000}',
         DocType.INSURANCE: '{"life_insurance_premium": 150}',
         DocType.DPS: '{"dps_contribution": 300}',
@@ -185,7 +185,7 @@ async def extract_structured_data(raw_text: str, doc_type: DocType) -> Optional[
     user = (
         f"Document type: {doc_type.value}.\n"
         "Return a JSON object with exactly the fields of the schema.\n"
-        f"Example: {example}\n\n"
+        f"Example: {example}\n"
         f"Document text:\n{cleaned}"
     )
 

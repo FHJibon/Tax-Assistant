@@ -39,6 +39,16 @@ def _get_openai_client() -> Optional[AsyncOpenAI]:
 ALLOWED_TAXPAYER_CATEGORIES = {"general", "women_senior", "disabled"}
 
 
+def _format_assessment_year(policy_key: str) -> str:
+    key = _normalize_tax_fy(policy_key)
+    return key.replace("_", "-")
+
+
+def _annualize_amount(amount: Any, *, is_monthly: bool) -> float:
+    v = safe_float(amount)
+    return v * 12.0 if is_monthly else v
+
+
 def _normalize_tax_fy(value: Any) -> str:
     raw = (safe_str(value) or "").lower().strip()
     raw = raw.replace("fy", "").replace("financial year", "").strip()
@@ -369,7 +379,7 @@ def _allocate_exemption_by_components(*, total_exempt: float, components: Dict[s
     running = 0
     for k, amt in amounts.items():
         raw = (exempt_total * amt) / total_amount
-        take = int(raw)  # floor
+        take = int(raw) 
         alloc[k] = take
         running += take
         fractions.append((k, raw - take))
@@ -550,7 +560,7 @@ async def build_tax_return_context(
         "name": safe_str(getattr(nid, "name", None)) or safe_str(getattr(user, "name", None)),
         "nid": safe_str(getattr(nid, "nid_number", None)) or safe_str(getattr(user, "nid", None)),
         "tin": safe_str(getattr(tin, "tin_number", None)) or safe_str(getattr(user, "tin", None)),
-        "circle": safe_str(getattr(tin, "tin_circle", None)),
+        "circle": safe_str(getattr(tin, "tax_circle", None)),
         "zone": safe_str(getattr(tin, "tax_zone", None)),
         "date_of_birth": getattr(user, "date_of_birth", None) or safe_str(getattr(nid, "date_of_birth", None)),
         "address": safe_str(getattr(user, "address", None)),
@@ -563,6 +573,10 @@ async def build_tax_return_context(
         "sal_medical": safe_float(getattr(salary, "medical", None)),
         "sal_conveyance": safe_float(getattr(salary, "conveyance", None)),
         "sal_festival": safe_float(getattr(salary, "festival_bonus", None)),
+
+        "salary_is_monthly": True,
+        "festival_bonus_is_monthly": False,
+        "assessment_year": None,
 
         "bank_interest": safe_float(getattr(bank, "interest_income", None)),
         "bank_balance": safe_float(getattr(bank, "bank_balance", None)),
@@ -604,29 +618,44 @@ async def build_tax_return_context(
     tin_chars = split_fixed_chars(normalize_tin(merged.get("tin")), 12)
     dob_parts = split_dob_parts(merged.get("date_of_birth"))
 
+    salary_is_monthly = bool(merged.get("salary_is_monthly"))
+    festival_bonus_is_monthly = bool(merged.get("festival_bonus_is_monthly"))
+
+    sal_basic_annual = _annualize_amount(merged.get("sal_basic"), is_monthly=salary_is_monthly)
+    sal_rent_annual = _annualize_amount(merged.get("sal_rent"), is_monthly=salary_is_monthly)
+    sal_medical_annual = _annualize_amount(merged.get("sal_medical"), is_monthly=salary_is_monthly)
+    sal_conveyance_annual = _annualize_amount(merged.get("sal_conveyance"), is_monthly=salary_is_monthly)
+    sal_festival_annual = _annualize_amount(merged.get("sal_festival"), is_monthly=festival_bonus_is_monthly)
+
     employment_income = (
-        safe_float(merged.get("sal_basic"))
-        + safe_float(merged.get("sal_rent"))
-        + safe_float(merged.get("sal_medical"))
-        + safe_float(merged.get("sal_conveyance"))
-        + safe_float(merged.get("sal_festival"))
+        sal_basic_annual
+        + sal_rent_annual
+        + sal_medical_annual
+        + sal_conveyance_annual
+        + sal_festival_annual
     )
 
     employment_exempt = compute_employment_exemption(employment_income)
     employment_taxable = max(0.0, employment_income - employment_exempt)
 
     sal_components = {
-        "sal_basic": safe_float(merged.get("sal_basic")),
-        "sal_rent": safe_float(merged.get("sal_rent")),
-        "sal_medical": safe_float(merged.get("sal_medical")),
-        "sal_conveyance": safe_float(merged.get("sal_conveyance")),
-        "sal_festival": safe_float(merged.get("sal_festival")),
+        "sal_basic": sal_basic_annual,
+        "sal_rent": sal_rent_annual,
+        "sal_medical": sal_medical_annual,
+        "sal_conveyance": sal_conveyance_annual,
+        "sal_festival": sal_festival_annual,
     }
     sal_alloc = _allocate_exemption_by_components(total_exempt=employment_exempt, components=sal_components)
     sal_ex = sal_alloc["exempt"]
     sal_tx = sal_alloc["taxable"]
 
     policy_key = _normalize_tax_fy(merged.get("tax_fy"))
+
+    assessment_year = (
+        safe_str(merged.get("assessment_year"))
+        or safe_str(merged.get("assesment_year"))
+        or _format_assessment_year(policy_key)
+    )
 
     benefit_war_wounded_ff = bool(merged.get("benefit_war_wounded_ff"))
     benefit_third_gender = bool(merged.get("benefit_third_gender"))
@@ -699,6 +728,13 @@ async def build_tax_return_context(
 
     context: Dict[str, Any] = {
         **merged,
+        "assessment_year": assessment_year,
+
+        "sal_basic": sal_basic_annual,
+        "sal_rent": sal_rent_annual,
+        "sal_medical": sal_medical_annual,
+        "sal_conveyance": sal_conveyance_annual,
+        "sal_festival": sal_festival_annual,
         "taxpayer_category": inp.taxpayer_category,
         "tax_fy": policy_key,
         "age_years": age_years,
@@ -721,15 +757,15 @@ async def build_tax_return_context(
         **dob_parts,
         "sal_total": employment_income,
         "sal_basic_exempt": sal_ex.get("sal_basic", 0),
-        "sal_basic_taxable": sal_tx.get("sal_basic", int(round(safe_float(merged.get("sal_basic"))))),
+        "sal_basic_taxable": sal_tx.get("sal_basic", int(round(sal_basic_annual))),
         "sal_rent_exempt": sal_ex.get("sal_rent", 0),
-        "sal_rent_taxable": sal_tx.get("sal_rent", int(round(safe_float(merged.get("sal_rent"))))),
+        "sal_rent_taxable": sal_tx.get("sal_rent", int(round(sal_rent_annual))),
         "sal_medical_exempt": sal_ex.get("sal_medical", 0),
-        "sal_medical_taxable": sal_tx.get("sal_medical", int(round(safe_float(merged.get("sal_medical"))))),
+        "sal_medical_taxable": sal_tx.get("sal_medical", int(round(sal_medical_annual))),
         "sal_conveyance_exempt": sal_ex.get("sal_conveyance", 0),
-        "sal_conveyance_taxable": sal_tx.get("sal_conveyance", int(round(safe_float(merged.get("sal_conveyance"))))),
+        "sal_conveyance_taxable": sal_tx.get("sal_conveyance", int(round(sal_conveyance_annual))),
         "sal_festival_exempt": sal_ex.get("sal_festival", 0),
-        "sal_festival_taxable": sal_tx.get("sal_festival", int(round(safe_float(merged.get("sal_festival"))))),
+        "sal_festival_taxable": sal_tx.get("sal_festival", int(round(sal_festival_annual))),
         "employment_exempt": employment_exempt,
         "employment_taxable": employment_taxable,
         "total_income": total_income,
