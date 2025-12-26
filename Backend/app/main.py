@@ -10,7 +10,7 @@ from app.api.endpoints.user import router as user_router
 from app.api.endpoints.generate import router as generate_router
 from app.api.endpoints.speech import router as speech_router
 
-app = FastAPI(title="AI Tax & Law Assistant")
+app = FastAPI(root_path="/api", title="AI Tax & Law Assistant")
 
 @app.on_event("startup")
 async def on_startup():
